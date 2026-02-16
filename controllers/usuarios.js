@@ -1,88 +1,17 @@
 const { Usuario, Loja } = require('../models');
 const bcrypt = require('bcryptjs');
-const { generateToken } = require('../config/auth');
 
 module.exports = {
-  // Listar TODOS os usuários (apenas para desenvolvimento)
-  async listarTodos(req, res) {
+  async criarUsuario(req, res) {
     try {
-      console.log('📋 Listando todos os usuários...');
+      const { lojaId } = req;
+      const { nome, email, senha, cargo, especialidade, cro } = req.body;
 
-      const usuarios = await Usuario.findAll({
-        attributes: { exclude: ['senha_hash'] },
-        include: [
-          {
-            model: Loja,
-            as: 'loja',
-            attributes: ['id', 'nome', 'email', 'telefone']
-          }
-        ],
-        order: [['nome', 'ASC']]
-      });
-
-      console.log(`✅ Encontrados ${usuarios.length} usuários`);
-
-      return res.json({
-        total: usuarios.length,
-        usuarios: usuarios
-      });
-
-    } catch (error) {
-      console.error('❌ Erro ao listar usuários:', error);
-      return res.status(500).json({
-        error: 'Erro ao listar usuários',
-        details: error.message
-      });
-    }
-  },
-
-  async listar(req, res) {
-    try {
-      const { lojaId, userCargo } = req;
-      const { ativo, pagina = 1, limite = 20 } = req.query;
-
-      console.log(`📋 Listando usuários da loja ${lojaId}`);
-
-      // Gerentes só podem ver funcionários
-      const where = { loja_id: lojaId };
-      if (userCargo === 'gerente') where.cargo = 'funcionario';
-      if (ativo) where.ativo = ativo === 'true';
-
-      const usuarios = await Usuario.findAndCountAll({
-        where,
-        attributes: { exclude: ['senha_hash'] },
-        include: [{
-          model: Loja,
-          as: 'loja',
-          attributes: ['id', 'nome']
-        }],
-        limit: parseInt(limite),
-        offset: (pagina - 1) * limite,
-        order: [['nome', 'ASC']]
-      });
-
-      res.json({
-        total: usuarios.count,
-        pagina: parseInt(pagina),
-        totalPaginas: Math.ceil(usuarios.count / limite),
-        usuarios: usuarios.rows
-      });
-    } catch (error) {
-      console.error('❌ Erro ao listar usuários:', error);
-      res.status(500).json({ error: 'Erro ao listar usuários' });
-    }
-  },
-
-  async cadastrar(req, res) {
-    try {
-      const { lojaId, userCargo } = req;
-      const { email, senha, cargo, ...dados } = req.body;
-
-      console.log('📝 Cadastrando novo usuário:', email);
+      console.log(`📝 Cadastrando novo usuário: ${email} com cargo: ${cargo}`);
 
       // Verifica permissões
-      if (userCargo === 'gerente' && cargo !== 'funcionario') {
-        return res.status(403).json({ error: 'Gerentes só podem cadastrar funcionários' });
+      if (req.userCargo !== 'proprietario' && req.userCargo !== 'gestor') {
+        return res.status(403).json({ error: 'Apenas proprietários e gestores podem criar usuários' });
       }
 
       // Verifica se email já existe
@@ -91,19 +20,32 @@ module.exports = {
         return res.status(400).json({ error: 'Email já cadastrado' });
       }
 
+      // Validações específicas por cargo
+      if (cargo === 'dentista') {
+        if (!especialidade || !cro) {
+          return res.status(400).json({ error: 'Dentista deve ter especialidade e CRO' });
+        }
+        
+        const croExistente = await Usuario.findOne({ where: { cro } });
+        if (croExistente) {
+          return res.status(400).json({ error: 'CRO já cadastrado' });
+        }
+      }
+
       // Criptografa senha
       const senha_hash = await bcrypt.hash(senha, 8);
 
       const usuario = await Usuario.create({
-        ...dados,
+        nome,
         email,
         senha_hash,
-        cargo: cargo || 'funcionario',
+        cargo,
+        especialidade: cargo === 'dentista' ? especialidade : null,
+        cro: cargo === 'dentista' ? cro : null,
         loja_id: lojaId,
         ativo: true
       });
 
-      // Remove senha do retorno
       const usuarioJson = usuario.toJSON();
       delete usuarioJson.senha_hash;
 
@@ -116,124 +58,45 @@ module.exports = {
     }
   },
 
-  async obterPorId(req, res) {
+  async listarUsuariosPorCargo(req, res) {
     try {
       const { lojaId } = req;
-      const { usuarioId } = req.params;
+      const { cargo } = req.query;
 
-      console.log(`🔍 Buscando usuário ${usuarioId} da loja ${lojaId}`);
+      const where = { loja_id: lojaId };
+      if (cargo) where.cargo = cargo;
 
-      const usuario = await Usuario.findOne({
-        where: { id: usuarioId, loja_id: lojaId },
+      const usuarios = await Usuario.findAll({
+        where,
         attributes: { exclude: ['senha_hash'] },
-        include: [{
-          model: Loja,
-          as: 'loja',
-          attributes: ['id', 'nome', 'email', 'telefone']
-        }]
+        order: [['nome', 'ASC']]
       });
 
-      if (!usuario) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
-      }
-
-      res.json(usuario);
+      res.json(usuarios);
     } catch (error) {
-      console.error('❌ Erro ao obter usuário:', error);
-      res.status(500).json({ error: 'Erro ao obter usuário' });
+      console.error('❌ Erro ao listar usuários:', error);
+      res.status(500).json({ error: 'Erro ao listar usuários' });
     }
   },
 
-  async atualizar(req, res) {
+  async listarDentistas(req, res) {
     try {
       const { lojaId } = req;
-      const { usuarioId } = req.params;
 
-      console.log(`✏️ Atualizando usuário ${usuarioId}`);
-
-      const usuario = await Usuario.findOne({
-        where: { id: usuarioId, loja_id: lojaId },
-        attributes: { exclude: ['senha_hash'] }
+      const dentistas = await Usuario.findAll({
+        where: { 
+          loja_id: lojaId,
+          cargo: 'dentista',
+          ativo: true
+        },
+        attributes: ['id', 'nome', 'especialidade', 'cro', 'email'],
+        order: [['nome', 'ASC']]
       });
 
-      if (!usuario) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
-      }
-
-      // Não permite atualizar loja_id
-      const { loja_id, senha, ...dados } = req.body;
-
-      // Se houver nova senha, criptografa
-      if (senha) {
-        dados.senha_hash = await bcrypt.hash(senha, 8);
-      }
-
-      await usuario.update(dados);
-
-      console.log('✅ Usuário atualizado com sucesso');
-
-      res.json(usuario);
+      res.json(dentistas);
     } catch (error) {
-      console.error('❌ Erro ao atualizar usuário:', error);
-      res.status(500).json({ error: 'Erro ao atualizar usuário' });
-    }
-  },
-
-  async desativar(req, res) {
-    try {
-      const { lojaId, userId } = req;
-      const { usuarioId } = req.params;
-
-      console.log(`🚫 Desativando usuário ${usuarioId}`);
-
-      // Não permite desativar a si mesmo
-      if (parseInt(usuarioId) === parseInt(userId)) {
-        return res.status(400).json({ error: 'Você não pode desativar seu próprio usuário' });
-      }
-
-      const usuario = await Usuario.findOne({
-        where: { id: usuarioId, loja_id: lojaId }
-      });
-
-      if (!usuario) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
-      }
-
-      await usuario.update({ ativo: false });
-
-      console.log('✅ Usuário desativado com sucesso');
-
-      res.json({ message: 'Usuário desativado com sucesso' });
-    } catch (error) {
-      console.error('❌ Erro ao desativar usuário:', error);
-      res.status(500).json({ error: 'Erro ao desativar usuário' });
-    }
-  },
-
-  async promoverGerente(req, res) {
-    try {
-      const { lojaId, userCargo } = req;
-      const { usuarioId } = req.params;
-
-      // Apenas proprietários podem promover gerentes
-      if (userCargo !== 'proprietario') {
-        return res.status(403).json({ error: 'Apenas proprietários podem promover gerentes' });
-      }
-
-      const usuario = await Usuario.findOne({
-        where: { id: usuarioId, loja_id: lojaId }
-      });
-
-      if (!usuario) {
-        return res.status(404).json({ error: 'Usuário não encontrado' });
-      }
-
-      await usuario.update({ cargo: 'gerente' });
-
-      res.json({ message: 'Usuário promovido a gerente com sucesso' });
-    } catch (error) {
-      console.error('❌ Erro ao promover usuário:', error);
-      res.status(500).json({ error: 'Erro ao promover usuário' });
+      console.error('❌ Erro ao listar dentistas:', error);
+      res.status(500).json({ error: 'Erro ao listar dentistas' });
     }
   }
 };

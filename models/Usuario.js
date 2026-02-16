@@ -1,4 +1,3 @@
-// models/Usuario.js
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize, Sequelize) => {
@@ -28,9 +27,9 @@ module.exports = (sequelize, Sequelize) => {
       allowNull: false
     },
     cargo: {
-      type: DataTypes.ENUM('proprietario', 'funcionario'),
+      type: DataTypes.ENUM('proprietario', 'gestor', 'dentista', 'atendente', 'financeiro'),
       allowNull: false,
-      defaultValue: 'funcionario'
+      defaultValue: 'atendente'
     },
     ativo: {
       type: DataTypes.BOOLEAN,
@@ -43,6 +42,15 @@ module.exports = (sequelize, Sequelize) => {
         model: 'lojas',
         key: 'id'
       }
+    },
+    especialidade: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    cro: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      unique: true
     }
   }, {
     tableName: 'usuarios',
@@ -55,6 +63,18 @@ module.exports = (sequelize, Sequelize) => {
     Usuario.belongsTo(models.Loja, {
       foreignKey: 'loja_id',
       as: 'loja'
+    });
+    Usuario.hasMany(models.Agendamento, {
+      foreignKey: 'dentista_id',
+      as: 'agendamentos'
+    });
+    Usuario.hasMany(models.Agendamento, {
+      foreignKey: 'usuario_id',
+      as: 'agendamentos_criados'
+    });
+    Usuario.hasMany(models.Venda, {
+      foreignKey: 'usuario_id',
+      as: 'vendas'
     });
   };
 

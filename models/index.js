@@ -22,10 +22,17 @@ const db = {
   Sequelize,
   sequelize,
   Usuario: require('./Usuario')(sequelize, Sequelize),
-  Loja: require('./Loja')(sequelize, Sequelize)
+  Loja: require('./Loja')(sequelize, Sequelize),
+  Paciente: require('./Paciente')(sequelize, Sequelize),
+  Categoria: require('./Categoria')(sequelize, Sequelize),
+  Procedimento: require('./Procedimento')(sequelize, Sequelize),
+  Agendamento: require('./Agendamento')(sequelize, Sequelize),
+  AgendamentoItem: require('./AgendamentoItem')(sequelize, Sequelize),
+  Venda: require('./Venda')(sequelize, Sequelize),
+  VendaItem: require('./VendaItem')(sequelize, Sequelize),
+  Material: require('./Material')(sequelize, Sequelize)
 };
 
-// Definir associações entre modelos
 Object.keys(db).forEach(modelName => {
   if (db[modelName].associate) {
     db[modelName].associate(db);

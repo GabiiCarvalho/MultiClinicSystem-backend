@@ -1,45 +1,46 @@
-const { Agendamento, Pet, Cliente, Usuario, Servico, AgendamentoItem } = require('../models');
+const { Agendamento, Paciente, Dentista, Categoria, Procedimento, Usuario, AgendamentoItem } = require('../models');
 
 module.exports = {
   async criar(req, res) {
-    const { loja_id, pet_id, cliente_id, data_hora, servicos, observacoes } = req.body;
+    const { loja_id, paciente_id, dentista_id, data_hora, procedimentos, observacoes } = req.body;
 
-    // Verifica se o pet e cliente pertencem à loja
-    const pet = await Pet.findOne({ where: { id: pet_id, loja_id } });
-    if (!pet) {
-      return res.status(400).json({ error: 'Pet não encontrado nesta loja' });
+    // Verifica se o paciente pertence à loja
+    const paciente = await Paciente.findOne({ where: { id: paciente_id, loja_id } });
+    if (!paciente) {
+      return res.status(400).json({ error: 'Paciente não encontrado nesta loja' });
     }
 
-    const cliente = await Cliente.findOne({ where: { id: cliente_id, loja_id } });
-    if (!cliente) {
-      return res.status(400).json({ error: 'Cliente não encontrado nesta loja' });
+    // Verifica se o dentista pertence à loja
+    const dentista = await Dentista.findOne({ where: { id: dentista_id, loja_id } });
+    if (!dentista) {
+      return res.status(400).json({ error: 'Dentista não encontrado nesta loja' });
     }
 
-    // Calcula a data/hora final baseada nos serviços
+    // Calcula a data/hora final baseada nos procedimentos
     let data_hora_fim = new Date(data_hora);
-    let totalServicos = 0;
+    let totalProcedimentos = 0;
 
-    // Verifica cada serviço
-    for (const servicoReq of servicos) {
-      const servico = await Servico.findOne({
-        where: { id: servicoReq.servico_id, loja_id }
+    // Verifica cada procedimento
+    for (const procedimentoReq of procedimentos) {
+      const procedimento = await Procedimento.findOne({
+        where: { id: procedimentoReq.procedimento_id, loja_id }
       });
 
-      if (!servico) {
+      if (!procedimento) {
         return res.status(400).json({
-          error: `Serviço ID ${servicoReq.servico_id} não encontrado`
+          error: `Procedimento ID ${procedimentoReq.procedimento_id} não encontrado`
         });
       }
 
-      data_hora_fim = new Date(data_hora_fim.getTime() + servico.duracao_minutos * 60000);
-      totalServicos += servico.preco;
+      data_hora_fim = new Date(data_hora_fim.getTime() + procedimento.duracao_minutos * 60000);
+      totalProcedimentos += procedimento.preco;
     }
 
     // Cria o agendamento
     const agendamento = await Agendamento.create({
       loja_id,
-      pet_id,
-      cliente_id,
+      paciente_id,
+      dentista_id,
       usuario_id: req.userId,
       data_hora,
       data_hora_fim,
@@ -49,17 +50,16 @@ module.exports = {
 
     // Cria os itens do agendamento
     const itens = [];
-    for (const servicoReq of servicos) {
-      const servico = await Servico.findByPk(servicoReq.servico_id);
+    for (const procedimentoReq of procedimentos) {
+      const procedimento = await Procedimento.findByPk(procedimentoReq.procedimento_id);
 
       const item = await AgendamentoItem.create({
         agendamento_id: agendamento.id,
-        servico_id: servico.id,
-        nome_servico: servico.nome,
-        descricao_servico: servico.descricao,
-        preco: servico.preco,
-        usando_plano: servicoReq.usando_plano || false,
-        observacoes: servicoReq.observacoes
+        procedimento_id: procedimento.id,
+        nome_procedimento: procedimento.nome,
+        descricao_procedimento: procedimento.descricao,
+        preco: procedimento.preco,
+        observacoes: procedimentoReq.observacoes
       });
 
       itens.push(item);
@@ -67,63 +67,10 @@ module.exports = {
 
     return res.status(201).json({
       agendamento,
-      servicos: itens,
-      total: totalServicos
+      procedimentos: itens,
+      total: totalProcedimentos
     });
   },
-
-  async usarPlanoMensal(req, res) {
-  const { lojaId } = req;
-  const { agendamentoId } = req.params;
-
-  const agendamento = await Agendamento.findByPk(agendamentoId, {
-    include: [
-      { model: Pet, as: 'Pet' },
-      { model: AgendamentoItem, as: 'Itens' }
-    ]
-  });
-
-  if (!agendamento) {
-    return res.status(404).json({ error: 'Agendamento não encontrado' });
-  }
-
-  // Verifica se o pet tem plano ativo
-  const planoAtivo = await PlanoMensal.findOne({
-    where: {
-      pet_id: agendamento.pet_id,
-      status: 'ativo',
-      data_fim: { [Op.gte]: new Date() }
-    }
-  });
-
-  if (!planoAtivo) {
-    return res.status(400).json({ error: 'Pet não possui plano ativo' });
-  }
-
-  // Verifica se há banhos disponíveis no plano
-  if (planoAtivo.banhos_utilizados >= planoAtivo.banhos_inclusos) {
-    return res.status(400).json({ error: 'Banhos do plano esgotados' });
-  }
-
-  // Atualiza os itens do agendamento para usar o plano
-  await Promise.all(
-    agendamento.Itens.map(async item => {
-      if (item.servico_id) { // Se for um serviço (não produto)
-        await item.update({ usando_plano: true });
-      }
-    })
-  );
-
-  // Atualiza o contador do plano
-  await planoAtivo.update({
-    banhos_utilizados: planoAtivo.banhos_utilizados + 1
-  });
-
-  return res.json({
-    message: 'Plano mensal aplicado com sucesso',
-    banhos_restantes: planoAtivo.banhos_inclusos - (planoAtivo.banhos_utilizados + 1)
-  });
-},
 
   async listarPorLoja(req, res) {
     const { lojaId } = req.params;
@@ -144,8 +91,8 @@ module.exports = {
     const agendamentos = await Agendamento.findAll({
       where,
       include: [
-        { model: Pet, as: 'Pet' },
-        { model: Cliente, as: 'Cliente' },
+        { model: Paciente, as: 'Paciente' },
+        { model: Dentista, as: 'Dentista' },
         { model: Usuario, as: 'Usuario', attributes: ['id', 'nome'] },
         { model: AgendamentoItem, as: 'Itens' }
       ],
@@ -159,17 +106,10 @@ module.exports = {
     const { agendamentoId } = req.params;
     const { status } = req.body;
 
-    const agendamento = await Agendamento.findByPk(agendamentoId, {
-      include: [{ model: Loja, as: 'Loja' }]
-    });
+    const agendamento = await Agendamento.findByPk(agendamentoId);
 
     if (!agendamento) {
       return res.status(404).json({ error: 'Agendamento não encontrado' });
-    }
-
-    // Verifica se o usuário tem permissão para este agendamento
-    if (agendamento.Loja.id !== req.lojaId) {
-      return res.status(403).json({ error: 'Acesso não autorizado' });
     }
 
     await agendamento.update({ status });

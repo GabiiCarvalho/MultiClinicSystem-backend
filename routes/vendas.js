@@ -19,10 +19,13 @@ router.delete('/:vendaId', authMiddleware, lojaMiddleware, vendaController.cance
 // Relatório de vendas por período
 router.get('/relatorio/periodo', authMiddleware, lojaMiddleware, vendaController.relatorioPeriodo);
 
-// Relatório de produtos mais vendidos
-router.get('/relatorio/produtos', authMiddleware, lojaMiddleware, vendaController.relatorioProdutos);
+// Relatório de procedimentos mais realizados
+router.get('/relatorio/procedimentos', authMiddleware, lojaMiddleware, vendaController.relatorioProcedimentos);
 
-// Relatório de serviços mais realizados
-router.get('/relatorio/servicos', authMiddleware, lojaMiddleware, vendaController.relatorioServicos);
+// Relatório por dentista
+router.get('/relatorio/dentista/:dentistaId', authMiddleware, lojaMiddleware, vendaController.relatorioPorDentista);
+
+// Relatório por forma de pagamento
+router.get('/relatorio/pagamentos', authMiddleware, lojaMiddleware, vendaController.relatorioPagamentos);
 
 module.exports = router;

@@ -9,28 +9,47 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false
     },
     status: {
-      type: DataTypes.ENUM('agendado', 'em_andamento', 'concluido', 'cancelado'),
+      type: DataTypes.ENUM('agendado', 'confirmado', 'em_andamento', 'concluido', 'cancelado'),
       defaultValue: 'agendado'
     },
     observacoes: {
       type: DataTypes.TEXT
     },
-    usando_plano: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false
+    motivo_cancelamento: {
+      type: DataTypes.TEXT
+    },
+    tipo_procedimento: {
+      type: DataTypes.STRING(100)
     }
   }, {
     tableName: 'agendamentos',
-    timestamps: true
+    timestamps: true,
+    createdAt: 'criado_em',
+    updatedAt: 'atualizado_em'
   });
 
   Agendamento.associate = (models) => {
-    Agendamento.belongsTo(models.Loja, { foreignKey: 'loja_id' });
-    Agendamento.belongsTo(models.Pet, { foreignKey: 'pet_id' });
-    Agendamento.belongsTo(models.Cliente, { foreignKey: 'cliente_id' });
-    Agendamento.belongsTo(models.Usuario, { foreignKey: 'usuario_id' });
-    Agendamento.hasMany(models.AgendamentoItem, { foreignKey: 'agendamento_id' });
-    Agendamento.hasMany(models.Venda, { foreignKey: 'agendamento_id' });
+    Agendamento.belongsTo(models.Loja, { 
+      foreignKey: 'loja_id',
+      as: 'loja' 
+    });
+    Agendamento.belongsTo(models.Paciente, { 
+      foreignKey: 'paciente_id',
+      as: 'paciente' 
+    });
+    Agendamento.belongsTo(models.Usuario, { 
+      foreignKey: 'dentista_id',
+      as: 'dentista',
+      constraints: false
+    });
+    Agendamento.belongsTo(models.Usuario, { 
+      foreignKey: 'usuario_id',
+      as: 'usuario' 
+    });
+    Agendamento.hasMany(models.AgendamentoItem, { 
+      foreignKey: 'agendamento_id',
+      as: 'itens' 
+    });
   };
 
   return Agendamento;

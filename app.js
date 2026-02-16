@@ -1,4 +1,3 @@
-// app.js
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -37,7 +36,10 @@ app.get('/api/health', (req, res) => {
         message: 'Servidor Rodando',
         timestamp: new Date().toISOString(),
         endpoints: {
-            usuarios: 'GET /api/usuarios/user (lista todos os usuários)',
+            pacientes: 'GET /api/pacientes',
+            dentistas: 'GET /api/dentistas',
+            procedimentos: 'GET /api/procedimentos',
+            categorias: 'GET /api/categorias',
             auth: {
                 login: 'POST /api/auth/login',
                 cadastro: 'POST /api/auth/cadastrar-proprietario'
@@ -49,11 +51,14 @@ app.get('/api/health', (req, res) => {
 // Rota padrão
 app.get('/', (req, res) => {
     res.json({ 
-        message: 'Bem-vindo ao Petshop API',
+        message: 'Bem-vindo à API da Clínica Odonto & Estética',
         version: '1.0.0',
         endpoints: {
             health: '/api/health',
-            usuarios: '/api/usuarios/user',
+            pacientes: '/api/pacientes',
+            dentistas: '/api/dentistas',
+            procedimentos: '/api/procedimentos',
+            categorias: '/api/categorias',
             auth: {
                 login: 'POST /api/auth/login',
                 cadastro: 'POST /api/auth/cadastrar-proprietario'
@@ -71,7 +76,7 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Rota não encontrada (deve ser a última)
+// Rota não encontrada
 app.use('*', (req, res) => {
     console.log('🔍 Rota não encontrada:', req.method, req.originalUrl);
     res.status(404).json({ 
@@ -80,7 +85,10 @@ app.use('*', (req, res) => {
         method: req.method,
         availableEndpoints: [
             'GET /api/health',
-            'GET /api/usuarios/user',
+            'GET /api/pacientes',
+            'GET /api/dentistas',
+            'GET /api/procedimentos',
+            'GET /api/categorias',
             'POST /api/auth/login',
             'POST /api/auth/cadastrar-proprietario'
         ]

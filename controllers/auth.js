@@ -28,12 +28,21 @@ module.exports = {
         return res.status(400).json({ error: 'Senha inválida' });
       }
 
-      const { id, nome, cargo, loja_id } = usuario;
+      const { id, nome, cargo, loja_id, especialidade, cro } = usuario;
       const token = jwt.sign(
-        { id, nome, cargo, loja_id }, 
+        { id, nome, cargo, loja_id, especialidade, cro }, 
         process.env.JWT_SECRET, 
         { expiresIn: '7d' }
       );
+
+      // Traduz cargo para exibição
+      const cargoDisplay = {
+        'proprietario': 'Proprietário',
+        'gestor': 'Gestor',
+        'dentista': 'Dentista',
+        'atendente': 'Atendente',
+        'financeiro': 'Financeiro'
+      }[cargo] || cargo;
 
       return res.json({
         usuario: {
@@ -41,6 +50,9 @@ module.exports = {
           nome,
           email: usuario.email,
           cargo,
+          cargoDisplay,
+          especialidade,
+          cro,
           loja_id,
           loja_nome: usuario.loja?.nome
         },
@@ -54,29 +66,25 @@ module.exports = {
 
   async cadastrarProprietario(req, res) {
     try {
-      const { nome, email, senha, loja } = req.body;
+      const { nome, email, senha, clinicName, address, phone, cnpj } = req.body;
 
-      // Validações de campos obrigatórios
-      if (!nome || !email || !senha || !loja || !loja.nome || !loja.endereco || !loja.telefone) {
+      if (!nome || !email || !senha || !clinicName || !address || !phone) {
         return res.status(400).json({ error: 'Todos os campos obrigatórios devem ser preenchidos' });
       }
 
-      // Verifica se usuário já existe
       const usuarioExistente = await Usuario.findOne({ where: { email } });
       if (usuarioExistente) {
         return res.status(400).json({ error: 'Email já cadastrado' });
       }
 
-      // Cria a loja primeiro
       const novaLoja = await Loja.create({
-        nome: loja.nome,
-        endereco: loja.endereco,
-        telefone: loja.telefone,
-        email: loja.email || email,
-        cnpj: loja.cnpj || null
+        nome: clinicName,
+        endereco: address,
+        telefone: phone,
+        email: email,
+        cnpj: cnpj || null
       });
 
-      // Cria o usuário proprietário
       const senha_hash = await bcrypt.hash(senha, 8);
       const novoUsuario = await Usuario.create({
         nome,

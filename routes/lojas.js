@@ -4,8 +4,11 @@ const authMiddleware = require('../middlewares/auth');
 const lojaMiddleware = require('../middlewares/loja');
 const lojaController = require('../controllers/lojas');
 
-// Listar todas as lojas (apenas admin)
+// Listar todas as lojas (apenas proprietário/gestor)
 router.get('/', authMiddleware, lojaController.listar);
+
+// Estatísticas da loja
+router.get('/estatisticas', authMiddleware, lojaMiddleware, lojaController.estatisticas);
 
 // Obter detalhes de uma loja
 router.get('/:lojaId', authMiddleware, lojaMiddleware, lojaController.obterPorId);

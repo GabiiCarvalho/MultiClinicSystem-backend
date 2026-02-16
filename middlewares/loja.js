@@ -8,6 +8,7 @@ module.exports = async (req, res, next) => {
       if (!loja || !loja.ativa) {
         return res.status(403).json({ error: 'Loja não encontrada ou inativa' });
       }
+      req.loja = loja; // Adiciona a loja ao request para uso posterior
       return next();
     } catch (err) {
       return res.status(500).json({ error: 'Erro ao verificar loja' });
@@ -25,7 +26,8 @@ module.exports = async (req, res, next) => {
     if (!loja || !loja.ativa) {
       return res.status(403).json({ error: 'Loja não encontrada ou inativa' });
     }
-    req.lojaId = loja.id; // Adiciona ao request para uso posterior
+    req.lojaId = loja.id;
+    req.loja = loja;
     next();
   } catch (err) {
     return res.status(500).json({ error: 'Erro ao verificar loja' });

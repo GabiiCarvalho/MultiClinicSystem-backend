@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  const Servico = sequelize.define('Servico', {
+  const Procedimento = sequelize.define('Procedimento', {
     nome: {
       type: DataTypes.STRING(100),
       allowNull: false
@@ -21,17 +21,17 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: true
     }
   }, {
-    tableName: 'servicos',
+    tableName: 'procedimentos',
     timestamps: true,
     createdAt: 'data_criacao',
     updatedAt: 'data_atualizacao'
   });
 
-  Servico.associate = (models) => {
-    Servico.belongsTo(models.Loja, { foreignKey: 'loja_id' });
-    Servico.hasMany(models.AgendamentoItem, { foreignKey: 'servico_id' });
-    Servico.hasMany(models.VendaItem, { foreignKey: 'servico_id' });
+  Procedimento.associate = (models) => {
+    Procedimento.belongsTo(models.Loja, { foreignKey: 'loja_id', as: 'loja' });
+    Procedimento.belongsTo(models.Categoria, { foreignKey: 'categoria_id', as: 'categoria' });
+    Procedimento.hasMany(models.AgendamentoItem, { foreignKey: 'procedimento_id', as: 'agendamentoItens' });
   };
 
-  return Servico;
+  return Procedimento;
 };

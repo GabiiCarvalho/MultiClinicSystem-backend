@@ -1,10 +1,10 @@
 const { 
   Agendamento, 
-  Cliente, 
-  Pet, 
-  Venda, 
-  Servico,
-  PlanoMensal,
+  Paciente, 
+  Dentista, 
+  Procedimento,
+  Venda,
+  Categoria,
   Sequelize 
 } = require('../models');
 const { Op } = require('sequelize');
@@ -38,20 +38,23 @@ module.exports = {
 
       // Consultas paralelas para melhor performance
       const [
-        totalClientes,
-        totalPets,
+        totalPacientes,
+        totalDentistas,
+        totalProcedimentos,
         agendamentosHoje,
         agendamentosPeriodo,
         vendasPeriodo,
-        servicosPopulares,
-        planosAtivos,
+        procedimentosPopulares,
         statusAgendamentos
       ] = await Promise.all([
-        // Total de clientes cadastrados
-        Cliente.count({ where: { loja_id: lojaId } }),
+        // Total de pacientes cadastrados
+        Paciente.count({ where: { loja_id: lojaId } }),
 
-        // Total de pets cadastrados
-        Pet.count({ where: { loja_id: lojaId } }),
+        // Total de dentistas ativos
+        Dentista.count({ where: { loja_id: lojaId, ativo: true } }),
+
+        // Total de procedimentos ativos
+        Procedimento.count({ where: { loja_id: lojaId, ativo: true } }),
 
         // Agendamentos para hoje
         Agendamento.findAll({
@@ -65,8 +68,8 @@ module.exports = {
             }
           },
           include: [
-            { model: Pet, attributes: ['id', 'nome'] },
-            { model: Cliente, attributes: ['id', 'nome'] }
+            { model: Paciente, attributes: ['id', 'nome'] },
+            { model: Dentista, attributes: ['id', 'nome'] }
           ],
           order: [['data_hora', 'ASC']]
         }),
@@ -99,8 +102,8 @@ module.exports = {
           raw: true
         }),
 
-        // Serviços mais populares
-        Servico.findAll({
+        // Procedimentos mais populares
+        Procedimento.findAll({
           where: { loja_id: lojaId },
           include: [{
             association: 'AgendamentoItens',
@@ -116,18 +119,9 @@ module.exports = {
             'nome',
             [Sequelize.fn('COUNT', Sequelize.col('AgendamentoItens.id')), 'total']
           ],
-          group: ['Servico.id'],
+          group: ['Procedimento.id'],
           order: [[Sequelize.literal('total'), 'DESC']],
           limit: 5
-        }),
-
-        // Planos mensais ativos
-        PlanoMensal.count({
-          where: {
-            loja_id: lojaId,
-            status: 'ativo',
-            data_fim: { [Op.gte]: new Date() }
-          }
         }),
 
         // Status dos agendamentos
@@ -145,9 +139,9 @@ module.exports = {
       // Formata dados para o dashboard
       const dashboardData = {
         metricas: {
-          totalClientes,
-          totalPets,
-          planosAtivos,
+          totalPacientes,
+          totalDentistas,
+          totalProcedimentos,
           agendamentosHoje: agendamentosHoje.length,
           faturamentoPeriodo: vendasPeriodo.reduce((sum, item) => sum + parseFloat(item.total), 0)
         },
@@ -165,10 +159,10 @@ module.exports = {
             total: item.total
           }))
         },
-        servicosPopulares: servicosPopulares.map(servico => ({
-          id: servico.id,
-          nome: servico.nome,
-          total: servico.dataValues.total
+        procedimentosPopulares: procedimentosPopulares.map(procedimento => ({
+          id: procedimento.id,
+          nome: procedimento.nome,
+          total: procedimento.dataValues.total
         })),
         proximosAgendamentos: agendamentosHoje
           .sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora))
@@ -176,8 +170,8 @@ module.exports = {
           .map(agendamento => ({
             id: agendamento.id,
             data_hora: moment(agendamento.data_hora).format('HH:mm'),
-            pet: agendamento.Pet.nome,
-            cliente: agendamento.Cliente.nome,
+            paciente: agendamento.Paciente.nome,
+            dentista: agendamento.Dentista.nome,
             status: agendamento.status
           }))
       };
@@ -197,7 +191,6 @@ module.exports = {
       const startDate = moment().subtract(meses, 'months').startOf('month');
       const endDate = moment().endOf('month');
 
-      // Consulta para dados financeiros
       const financialData = await Venda.findAll({
         where: {
           loja_id: lojaId,
@@ -213,14 +206,12 @@ module.exports = {
         raw: true
       });
 
-      // Formata os dados para o gráfico
       const formattedData = financialData.map(item => ({
         mes: moment(item.mes).format('MMM/YY'),
         total: parseFloat(item.total),
         vendas: item.vendas
       }));
 
-      // Preenche meses sem vendas
       const monthsArray = [];
       let currentDate = startDate.clone();
       
@@ -241,78 +232,6 @@ module.exports = {
     } catch (error) {
       console.error('Erro no overview financeiro:', error);
       res.status(500).json({ error: 'Erro ao carregar dados financeiros' });
-    }
-  },
-
-  async getServiceMetrics(req, res) {
-    try {
-      const { lojaId } = req;
-      const { servicoId } = req.params;
-
-      // Dados do serviço específico
-      const servico = await Servico.findOne({
-        where: { id: servicoId, loja_id: lojaId },
-        include: [{
-          association: 'AgendamentoItens',
-          include: [{
-            association: 'Agendamento',
-            attributes: ['data_hora', 'status']
-          }]
-        }]
-      });
-
-      if (!servico) {
-        return res.status(404).json({ error: 'Serviço não encontrado' });
-      }
-
-      // Calcula métricas
-      const totalRealizado = servico.AgendamentoItens
-        .filter(item => item.Agendamento.status === 'concluido')
-        .length;
-
-      const totalAgendado = servico.AgendamentoItens
-        .filter(item => item.Agendamento.status === 'agendado')
-        .length;
-
-      const ultimosMeses = await AgendamentoItem.findAll({
-        where: { servico_id: servicoId },
-        attributes: [
-          [Sequelize.fn('date_trunc', 'month', Sequelize.col('Agendamento.data_hora')), 'mes'],
-          [Sequelize.fn('count', Sequelize.col('AgendamentoItens.id')), 'total']
-        ],
-        include: [{
-          association: 'Agendamento',
-          where: { 
-            loja_id: lojaId,
-            data_hora: { [Op.gte]: moment().subtract(6, 'months').toDate() }
-          },
-          attributes: []
-        }],
-        group: ['mes'],
-        order: [['mes', 'ASC']],
-        raw: true
-      });
-
-      res.json({
-        servico: {
-          id: servico.id,
-          nome: servico.nome,
-          descricao: servico.descricao,
-          preco: servico.preco
-        },
-        metricas: {
-          totalRealizado,
-          totalAgendado,
-          faturamento: totalRealizado * servico.preco
-        },
-        historico: ultimosMeses.map(item => ({
-          mes: moment(item.mes).format('MMM/YY'),
-          total: item.total
-        }))
-      });
-    } catch (error) {
-      console.error('Erro nas métricas do serviço:', error);
-      res.status(500).json({ error: 'Erro ao carregar métricas do serviço' });
     }
   }
 };

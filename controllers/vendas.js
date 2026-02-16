@@ -1,17 +1,18 @@
-const { Venda, VendaItem, Cliente, Produto, Servico, Agendamento } = require('../models');
+const { Venda, VendaItem, Paciente, Procedimento, Agendamento } = require('../models');
+const { Op } = require('sequelize');
 
 module.exports = {
   async criar(req, res) {
     const { lojaId, userId } = req;
-    const { cliente_id, itens, forma_pagamento, observacoes } = req.body;
+    const { paciente_id, itens, forma_pagamento, observacoes } = req.body;
 
-    // Verifica se cliente pertence à loja
-    if (cliente_id) {
-      const cliente = await Cliente.findOne({ 
-        where: { id: cliente_id, loja_id: lojaId } 
+    // Verifica se paciente pertence à loja
+    if (paciente_id) {
+      const paciente = await Paciente.findOne({ 
+        where: { id: paciente_id, loja_id: lojaId } 
       });
-      if (!cliente) {
-        return res.status(400).json({ error: 'Cliente não encontrado' });
+      if (!paciente) {
+        return res.status(400).json({ error: 'Paciente não encontrado' });
       }
     }
 
@@ -20,50 +21,23 @@ module.exports = {
 
     // Valida e calcula os itens
     for (const item of itens) {
-      if (item.produto_id) {
-        const produto = await Produto.findOne({ 
-          where: { id: item.produto_id, loja_id: lojaId } 
+      if (item.procedimento_id) {
+        const procedimento = await Procedimento.findOne({ 
+          where: { id: item.procedimento_id, loja_id: lojaId } 
         });
-        if (!produto) {
-          return res.status(400).json({ error: `Produto ID ${item.produto_id} não encontrado` });
-        }
-        if (produto.estoque < item.quantidade) {
-          return res.status(400).json({ error: `Estoque insuficiente para o produto ${produto.nome}` });
+        if (!procedimento) {
+          return res.status(400).json({ error: `Procedimento ID ${item.procedimento_id} não encontrado` });
         }
 
-        const totalItem = produto.preco * item.quantidade;
+        const totalItem = procedimento.preco * (item.quantidade || 1);
         subtotal += totalItem;
 
         itensVenda.push({
-          produto_id: produto.id,
-          item_nome: produto.nome,
-          item_descricao: produto.descricao,
-          quantidade: item.quantidade,
-          preco_unitario: produto.preco,
-          total: totalItem
-        });
-
-        // Atualiza estoque
-        await produto.update({ 
-          estoque: produto.estoque - item.quantidade 
-        });
-      } else if (item.servico_id) {
-        const servico = await Servico.findOne({ 
-          where: { id: item.servico_id, loja_id: lojaId } 
-        });
-        if (!servico) {
-          return res.status(400).json({ error: `Serviço ID ${item.servico_id} não encontrado` });
-        }
-
-        const totalItem = servico.preco * (item.quantidade || 1);
-        subtotal += totalItem;
-
-        itensVenda.push({
-          servico_id: servico.id,
-          item_nome: servico.nome,
-          item_descricao: servico.descricao,
+          procedimento_id: procedimento.id,
+          item_nome: procedimento.nome,
+          item_descricao: procedimento.descricao,
           quantidade: item.quantidade || 1,
-          preco_unitario: servico.preco,
+          preco_unitario: procedimento.preco,
           total: totalItem
         });
 
@@ -80,16 +54,18 @@ module.exports = {
           }
           itensVenda[itensVenda.length - 1].agendamento_id = agendamento.id;
         }
+      } else {
+        return res.status(400).json({ error: 'Item deve conter procedimento_id' });
       }
     }
 
     // Cria a venda
     const venda = await Venda.create({
       loja_id: lojaId,
-      cliente_id: cliente_id || null,
+      paciente_id: paciente_id || null,
       usuario_id: userId,
       subtotal,
-      total: subtotal, // Sem desconto por padrão
+      total: subtotal,
       forma_pagamento,
       observacoes
     });
@@ -108,6 +84,57 @@ module.exports = {
     });
   },
 
+  async listar(req, res) {
+    const { lojaId } = req;
+    const { data_inicio, data_fim, pagina = 1, limite = 20 } = req.query;
+
+    const where = { loja_id: lojaId };
+
+    if (data_inicio && data_fim) {
+      where.data_hora = {
+        [Op.between]: [new Date(data_inicio), new Date(data_fim)]
+      };
+    }
+
+    const vendas = await Venda.findAndCountAll({
+      where,
+      limit: parseInt(limite),
+      offset: (pagina - 1) * limite,
+      include: [
+        { model: Paciente, as: 'paciente', attributes: ['id', 'nome', 'telefone'] },
+        { model: VendaItem, as: 'itens' }
+      ],
+      order: [['data_hora', 'DESC']]
+    });
+
+    return res.json({
+      total: vendas.count,
+      pagina: parseInt(pagina),
+      totalPaginas: Math.ceil(vendas.count / limite),
+      vendas: vendas.rows
+    });
+  },
+
+  async obterPorId(req, res) {
+    const { lojaId } = req;
+    const { vendaId } = req.params;
+
+    const venda = await Venda.findOne({
+      where: { id: vendaId, loja_id: lojaId },
+      include: [
+        { model: Paciente, as: 'paciente' },
+        { model: Usuario, as: 'usuario', attributes: ['id', 'nome'] },
+        { model: VendaItem, as: 'itens' }
+      ]
+    });
+
+    if (!venda) {
+      return res.status(404).json({ error: 'Venda não encontrada' });
+    }
+
+    return res.json(venda);
+  },
+
   async relatorioPeriodo(req, res) {
     const { lojaId } = req;
     const { data_inicio, data_fim } = req.query;
@@ -124,10 +151,9 @@ module.exports = {
         }
       },
       include: [
-        { model: Cliente, attributes: ['id', 'nome'] },
+        { model: Paciente, attributes: ['id', 'nome'] },
         { model: VendaItem, include: [
-          { model: Produto, attributes: ['id', 'nome'] },
-          { model: Servico, attributes: ['id', 'nome'] }
+          { model: Procedimento, attributes: ['id', 'nome'] }
         ]}
       ],
       order: [['data_hora', 'DESC']]
@@ -136,12 +162,39 @@ module.exports = {
     const totalVendas = vendas.reduce((sum, venda) => sum + parseFloat(venda.total), 0);
     const totalItens = vendas.reduce((sum, venda) => sum + venda.VendaItems.length, 0);
 
+    // Agrupar por forma de pagamento
+    const pagamentos = {};
+    vendas.forEach(venda => {
+      if (!pagamentos[venda.forma_pagamento]) {
+        pagamentos[venda.forma_pagamento] = 0;
+      }
+      pagamentos[venda.forma_pagamento] += parseFloat(venda.total);
+    });
+
     return res.json({
       periodo: `${data_inicio} até ${data_fim}`,
       total_vendas: vendas.length,
       valor_total: totalVendas,
       total_itens: totalItens,
+      pagamentos,
       vendas
     });
+  },
+
+  async cancelar(req, res) {
+    const { lojaId } = req;
+    const { vendaId } = req.params;
+    const { motivo } = req.body;
+
+    const venda = await Venda.findOne({
+      where: { id: vendaId, loja_id: lojaId }
+    });
+
+    if (!venda) {
+      return res.status(404).json({ error: 'Venda não encontrada' });
+    }
+
+    await venda.update({ status: 'cancelado', observacoes: motivo });
+    return res.json({ message: 'Venda cancelada com sucesso' });
   }
 };

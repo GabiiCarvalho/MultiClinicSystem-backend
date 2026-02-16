@@ -36,6 +36,10 @@ module.exports = (sequelize, Sequelize) => {
       type: DataTypes.STRING,
       allowNull: true,
       unique: true
+    },
+    ativa: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true
     }
   }, {
     tableName: 'lojas',
@@ -48,6 +52,30 @@ module.exports = (sequelize, Sequelize) => {
     Loja.hasMany(models.Usuario, {
       foreignKey: 'loja_id',
       as: 'usuarios'
+    });
+    Loja.hasMany(models.Paciente, {
+      foreignKey: 'loja_id',
+      as: 'pacientes'
+    });
+    Loja.hasMany(models.Procedimento, {
+      foreignKey: 'loja_id',
+      as: 'procedimentos'
+    });
+    Loja.hasMany(models.Categoria, {
+      foreignKey: 'loja_id',
+      as: 'categorias'
+    });
+    Loja.hasMany(models.Agendamento, {
+      foreignKey: 'loja_id',
+      as: 'agendamentos'
+    });
+    Loja.hasMany(models.Venda, {
+      foreignKey: 'loja_id',
+      as: 'vendas'
+    });
+    Loja.hasMany(models.Material, {
+      foreignKey: 'loja_id',
+      as: 'materiais'
     });
   };
 
