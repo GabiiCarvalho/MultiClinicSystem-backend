@@ -1,21 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const dashboardController = require('../controllers/dashboard');
-const authMiddleware = require('../middlewares/auth');
 
-// Dashboard geral
-router.get('/', authMiddleware, dashboardController.getDashboardData);
+router.get('/', (req, res) => {
+    res.json({ message: 'Dashboard funcionando' });
+});
 
-// Dados financeiros
-router.get('/financeiro', authMiddleware, dashboardController.getFinancialOverview);
+router.get('/financeiro', (req, res) => {
+    res.json({ message: 'Dados financeiros' });
+});
 
-// Métricas por procedimento
-router.get('/procedimentos/:procedimentoId', authMiddleware, dashboardController.getProcedureMetrics);
+router.get('/fluxo-pacientes', (req, res) => {
+    res.json({ message: 'Fluxo de pacientes' });
+});
 
-// Fluxo de pacientes
-router.get('/fluxo-pacientes', authMiddleware, dashboardController.getPatientFlow);
+router.get('/procedimentos/:id', (req, res) => {
+    res.json({ message: `Métricas do procedimento ${req.params.id}` });
+});
 
-// Métricas por dentista
-router.get('/dentistas/:dentistaId', authMiddleware, dashboardController.getDentistMetrics);
+router.get('/dentistas/:id', (req, res) => {
+    res.json({ message: `Métricas do dentista ${req.params.id}` });
+});
 
 module.exports = router;

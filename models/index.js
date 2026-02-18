@@ -1,5 +1,6 @@
+
 const { Sequelize } = require('sequelize');
-const dbConfig = require('../config/db');
+const dbConfig = require('../config/config');
 
 const env = process.env.NODE_ENV || 'development';
 const config = dbConfig[env];
@@ -30,7 +31,9 @@ const db = {
   AgendamentoItem: require('./AgendamentoItem')(sequelize, Sequelize),
   Venda: require('./Venda')(sequelize, Sequelize),
   VendaItem: require('./VendaItem')(sequelize, Sequelize),
-  Material: require('./Material')(sequelize, Sequelize)
+  Material: require('./Material')(sequelize, Sequelize),
+  Orcamento: require('./Orcamento')(sequelize, Sequelize),
+  OrcamentoItem: require('./OrcamentoItem')(sequelize, Sequelize)
 };
 
 Object.keys(db).forEach(modelName => {

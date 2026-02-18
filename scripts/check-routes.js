@@ -7,7 +7,7 @@ function checkRoutes() {
   const expectedRoutes = [
     // Auth
     'POST /api/auth/login',
-    'POST /api/auth/cadastrar-proprietario',
+    'POST /api/auth/cadastrar-usuario',
     
     // Usuários
     'GET /api/usuarios',

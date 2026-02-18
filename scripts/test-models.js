@@ -8,7 +8,7 @@ async function testModels() {
     await db.sequelize.authenticate();
     console.log('✅ Conexão com banco de dados estabelecida\n');
 
-    // Testar criação de loja
+    // Testar criação de lojaa
     const loja = await db.Loja.create({
       nome: 'Clínica Teste',
       endereco: 'Rua Teste, 123',

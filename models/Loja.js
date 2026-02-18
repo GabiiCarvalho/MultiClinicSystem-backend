@@ -9,10 +9,7 @@ module.exports = (sequelize, Sequelize) => {
     },
     nome: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true
-      }
+      allowNull: false
     },
     endereco: {
       type: DataTypes.TEXT,
@@ -20,22 +17,16 @@ module.exports = (sequelize, Sequelize) => {
     },
     telefone: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true
-      }
+      allowNull: false
     },
     email: {
       type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        isEmail: true
-      }
+      allowNull: false
     },
     cnpj: {
       type: DataTypes.STRING,
-      allowNull: true,
-      unique: true
+      allowNull: false,
+      unique: true // CNPJ único para cada clínica
     },
     ativa: {
       type: DataTypes.BOOLEAN,
@@ -61,10 +52,6 @@ module.exports = (sequelize, Sequelize) => {
       foreignKey: 'loja_id',
       as: 'procedimentos'
     });
-    Loja.hasMany(models.Categoria, {
-      foreignKey: 'loja_id',
-      as: 'categorias'
-    });
     Loja.hasMany(models.Agendamento, {
       foreignKey: 'loja_id',
       as: 'agendamentos'
@@ -72,10 +59,6 @@ module.exports = (sequelize, Sequelize) => {
     Loja.hasMany(models.Venda, {
       foreignKey: 'loja_id',
       as: 'vendas'
-    });
-    Loja.hasMany(models.Material, {
-      foreignKey: 'loja_id',
-      as: 'materiais'
     });
   };
 

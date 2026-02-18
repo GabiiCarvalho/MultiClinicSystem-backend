@@ -1,13 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const procedimentoController = require('../controllers/procedimentos');
-const authMiddleware = require('../middlewares/auth');
-const lojaMiddleware = require('../middlewares/loja');
 
-router.get('/', authMiddleware, lojaMiddleware, procedimentoController.listar);
-router.post('/', authMiddleware, lojaMiddleware, procedimentoController.criar);
-router.get('/:procedimentoId', authMiddleware, lojaMiddleware, procedimentoController.obterPorId);
-router.put('/:procedimentoId', authMiddleware, lojaMiddleware, procedimentoController.atualizar);
-router.patch('/:procedimentoId/status', authMiddleware, lojaMiddleware, procedimentoController.atualizarStatus);
+router.get('/', (req, res) => {
+    res.json({ message: 'Rota de procedimentos funcionando' });
+});
+
+router.post('/', (req, res) => {
+    res.json({ message: 'Procedimento criado' });
+});
+
+router.get('/:id', (req, res) => {
+    res.json({ message: `Procedimento ${req.params.id}` });
+});
+
+router.put('/:id', (req, res) => {
+    res.json({ message: `Procedimento ${req.params.id} atualizado` });
+});
+
+router.patch('/:id/status', (req, res) => {
+    res.json({ message: `Status do procedimento ${req.params.id} atualizado` });
+});
 
 module.exports = router;

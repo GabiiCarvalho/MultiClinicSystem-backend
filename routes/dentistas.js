@@ -1,13 +1,24 @@
 const express = require('express');
 const router = express.Router();
-const dentistaController = require('../controllers/dentistas');
-const authMiddleware = require('../middlewares/auth');
-const lojaMiddleware = require('../middlewares/loja');
 
-router.get('/', authMiddleware, lojaMiddleware, dentistaController.listar);
-router.post('/', authMiddleware, lojaMiddleware, dentistaController.criar);
-router.get('/:dentistaId', authMiddleware, lojaMiddleware, dentistaController.obterPorId);
-router.put('/:dentistaId', authMiddleware, lojaMiddleware, dentistaController.atualizar);
-router.get('/:dentistaId/agendamentos', authMiddleware, lojaMiddleware, dentistaController.listarAgendamentos);
+router.get('/', (req, res) => {
+    res.json({ message: 'Rota de dentistas funcionando' });
+});
+
+router.post('/', (req, res) => {
+    res.json({ message: 'Dentista criado' });
+});
+
+router.get('/:id', (req, res) => {
+    res.json({ message: `Dentista ${req.params.id}` });
+});
+
+router.put('/:id', (req, res) => {
+    res.json({ message: `Dentista ${req.params.id} atualizado` });
+});
+
+router.get('/:id/agendamentos', (req, res) => {
+    res.json({ message: `Agendamentos do dentista ${req.params.id}` });
+});
 
 module.exports = router;

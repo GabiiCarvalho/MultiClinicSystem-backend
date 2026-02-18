@@ -1,21 +1,22 @@
 const { Loja } = require('../models');
 
 module.exports = async (req, res, next) => {
-  // Se o usuário já tem loja_id (de token JWT), verifica se a loja existe
+  // Se o usuário já tem loja_id (de token JWT), usa esse
   if (req.lojaId) {
     try {
       const loja = await Loja.findByPk(req.lojaId);
       if (!loja || !loja.ativa) {
         return res.status(403).json({ error: 'Loja não encontrada ou inativa' });
       }
-      req.loja = loja; // Adiciona a loja ao request para uso posterior
+      req.loja = loja;
+      req.lojaCNPJ = loja.cnpj;
       return next();
     } catch (err) {
       return res.status(500).json({ error: 'Erro ao verificar loja' });
     }
   }
   
-  // Para rotas que precisam especificar a loja no corpo/params
+  // Para rotas que precisam especificar a loja (como cadastro inicial)
   const lojaId = req.params.lojaId || req.body.loja_id;
   if (!lojaId) {
     return res.status(400).json({ error: 'ID da loja não fornecido' });
@@ -28,6 +29,7 @@ module.exports = async (req, res, next) => {
     }
     req.lojaId = loja.id;
     req.loja = loja;
+    req.lojaCNPJ = loja.cnpj;
     next();
   } catch (err) {
     return res.status(500).json({ error: 'Erro ao verificar loja' });

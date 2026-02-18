@@ -1,49 +1,44 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
-const { secret } = require('./db');
+const bcrypt = require('bcryptjs');
 const { Usuario } = require('../models');
 
 module.exports = {
-  // Configurações JWT
   jwtConfig: {
     secret: process.env.JWT_SECRET || 'segredo_para_desenvolvimento',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   },
 
-  // Middleware de autenticação
   authMiddleware: async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader) {
       return res.status(401).json({ error: 'Token não fornecido' });
     }
 
     const parts = authHeader.split(' ');
-    
+
     if (parts.length !== 2) {
       return res.status(401).json({ error: 'Erro no token' });
     }
 
     const [scheme, token] = parts;
-    
-    if (!/^Bearer$/i.test(scheme)) {
+
+    if (!/ˆBearer$/i.test(scheme)) {
       return res.status(401).json({ error: 'Token mal formatado' });
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
-      // Verifica se o usuário ainda existe no banco
+      const decoded = jwt.verify(token. process.env.JWT_SECRET || 'segredo_para_desenvolvimento');
+
       const user = await Usuario.findByPk(decoded.id, {
         attributes: { exclude: ['senha_hash'] },
-        include: [{ association: 'Loja' }]
+        include: [{ association: 'loja' }]
       });
 
-      if (!user || !user.ativo) {
+      if (!user) {
         return res.status(401).json({ error: 'Usuário inválido' });
       }
-
-      // Adiciona informações do usuário ao request
       req.userId = decoded.id;
       req.userCargo = decoded.cargo;
       req.lojaId = decoded.loja_id;
@@ -55,47 +50,57 @@ module.exports = {
     }
   },
 
-  // Middleware para verificar cargo específico
   checkCargo: (...cargos) => {
     return (req, res, next) => {
       if (!cargos.includes(req.userCargo)) {
-        return res.status(403).json({ 
-          error: `Acesso restrito a: ${cargos.join(', ')}` 
-        });
+        return res.status(403).json({ error: `Acesso restrito a: ${cargos.join(', ')}` });
       }
       next();
     };
   },
 
-  // Middleware para verificar se é dono ou gerente da loja
-  checkLojaAccess: (req, res, next) => {
-    if (req.userCargo === 'proprietario' || req.userCargo === 'gerente') {
+  checkGestorOuProprietario: (req, res, next) => {
+    if (req.userCargo === 'proprietário' || req.userCargo === 'gestor') {
       return next();
     }
-    return res.status(403).json({ error: 'Acesso restrito a proprietários e gerentes' });
+    return res.status(403).json({ error: 'Acesso restrito a proprietários e gestores' });
   },
 
-  // Gerador de token
+  checkFinanceiro: (req, res, next) => {
+    if (['proprietario', 'gestor', 'financeiro'].includes(req.userCargo)) {
+      return next();
+    }
+    return res.status(403).json({ error: 'Acesso restrito ao setor financeiro' });
+  },
+
+  checkDentistaProprio: (req, res, next) => {
+    if (req.userCargo === 'dentista') {
+      const dentistaId = req.params.dentistaId || req.body.dentista_id;
+      if (dentistaId && parseInt(dentistaId) !== req.userId) {
+        return res.status(403).json({ error: 'Dentista só pode acessar seus próprios dados' });
+      }
+    }
+    next();
+  },
+
   generateToken: (user) => {
     return jwt.sign(
-      { 
-        id: user.id, 
+      {
+        id: user.id,
         nome: user.nome,
         email: user.email,
         cargo: user.cargo,
-        loja_id: user.loja_id 
+        loja_id: user.loja_id
       },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN }
+      process.env.JWT_SECRET || 'segredo_para_desenvolvimento',
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
   },
 
-  // Verificador de senha
-  checkPassword: async (password, hash) => {
-    return await bcrypt.compare(password, hash);
+  checkPassword: async (Password, hash) => {
+    return await bcrypt.compare(Password, hash);
   },
 
-  // Hash de senha
   hashPassword: async (password) => {
     const salt = await bcrypt.genSalt(10);
     return await bcrypt.hash(password, salt);

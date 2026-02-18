@@ -14,10 +14,24 @@ const vendaRoutes = require('./vendas');
 const dashboardRoutes = require('./dashboard');
 const materialRoutes = require('./materiais');
 
+// Log para debug
+console.log('📦 Rotas carregadas:');
+console.log('  - auth:', !!authRoutes);
+console.log('  - usuarios:', !!usuarioRoutes);
+console.log('  - lojas:', !!lojaRoutes);
+console.log('  - pacientes:', !!pacienteRoutes);
+console.log('  - dentistas:', !!dentistaRoutes);
+console.log('  - categorias:', !!categoriaRoutes);
+console.log('  - procedimentos:', !!procedimentoRoutes);
+console.log('  - agendamentos:', !!agendamentoRoutes);
+console.log('  - vendas:', !!vendaRoutes);
+console.log('  - dashboard:', !!dashboardRoutes);
+console.log('  - materiais:', !!materialRoutes);
+
 // Rotas públicas
 router.use('/auth', authRoutes);
 
-// Rotas protegidas
+// Rotas protegidas (serão adicionados middlewares depois)
 router.use('/usuarios', usuarioRoutes);
 router.use('/lojas', lojaRoutes);
 router.use('/pacientes', pacienteRoutes);

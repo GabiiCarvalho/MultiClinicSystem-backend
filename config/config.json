@@ -1,0 +1,34 @@
+{
+  "development": {
+    "username": "gabinatan",
+    "password": "sistemamulticlinic142536!",
+    "database": "multiclinic_db",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "gabinatan",
+    "password": "sistemamulticlinic142536!",
+    "database": "multiclinic_test",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": false
+  },
+  "production": {
+    "username": "gabinatan",
+    "password": "sistemamulticlinic142536!",
+    "database": "multiclinic_db",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": false,
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    }
+  }
+}

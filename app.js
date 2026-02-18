@@ -4,16 +4,29 @@ const cors = require('cors');
 
 const app = express();
 
-// Middlewares
+// Configuração CORS correta
 app.use(cors({
-    origin: 'http://localhost:5173',
-    credentials: true
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Importante: middleware para OPTIONS preflight
+app.options('*', cors());
+
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Log detalhado de todas as requisições
 app.use((req, res, next) => {
     console.log('🌐', new Date().toLocaleString(), req.method, req.originalUrl);
+    console.log('📦 Headers:', {
+        origin: req.headers.origin,
+        'content-type': req.headers['content-type'],
+        authorization: req.headers.authorization ? 'Presente' : 'Ausente'
+    });
     if (Object.keys(req.body).length > 0) {
         console.log('📦 Body:', req.body);
     }
@@ -35,6 +48,10 @@ app.get('/api/health', (req, res) => {
         status: 'OK', 
         message: 'Servidor Rodando',
         timestamp: new Date().toISOString(),
+        cors: {
+            origin: req.headers.origin || 'unknown',
+            method: req.method
+        },
         endpoints: {
             pacientes: 'GET /api/pacientes',
             dentistas: 'GET /api/dentistas',
@@ -42,7 +59,7 @@ app.get('/api/health', (req, res) => {
             categorias: 'GET /api/categorias',
             auth: {
                 login: 'POST /api/auth/login',
-                cadastro: 'POST /api/auth/cadastrar-proprietario'
+                cadastro: 'POST /api/auth/cadastrar-usuario'
             }
         }
     });
@@ -51,7 +68,7 @@ app.get('/api/health', (req, res) => {
 // Rota padrão
 app.get('/', (req, res) => {
     res.json({ 
-        message: 'Bem-vindo à API da Clínica Odonto & Estética',
+        message: 'Bem-vindo à API da MultiClinic',
         version: '1.0.0',
         endpoints: {
             health: '/api/health',
@@ -61,7 +78,7 @@ app.get('/', (req, res) => {
             categorias: '/api/categorias',
             auth: {
                 login: 'POST /api/auth/login',
-                cadastro: 'POST /api/auth/cadastrar-proprietario'
+                cadastro: 'POST /api/auth/cadastrar-usuario'
             }
         }
     });
@@ -90,7 +107,7 @@ app.use('*', (req, res) => {
             'GET /api/procedimentos',
             'GET /api/categorias',
             'POST /api/auth/login',
-            'POST /api/auth/cadastrar-proprietario'
+            'POST /api/auth/cadastrar-usuario'
         ]
     });
 });
