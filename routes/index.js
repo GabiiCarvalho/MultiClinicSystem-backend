@@ -13,6 +13,8 @@ const agendamentoRoutes = require('./agendamentos');
 const vendaRoutes = require('./vendas');
 const dashboardRoutes = require('./dashboard');
 const materialRoutes = require('./materiais');
+const pagamentoRoutes = require('./pagamentos');
+const pessoaRoutes = require('./pessoas');
 
 // Log para debug
 console.log('📦 Rotas carregadas:');
@@ -33,6 +35,8 @@ router.use('/auth', authRoutes);
 
 // Rotas protegidas (serão adicionados middlewares depois)
 router.use('/usuarios', usuarioRoutes);
+router.use('/pessoas', pessoaRoutes);
+router.use('/pagamentos', pagamentoRoutes);
 router.use('/lojas', lojaRoutes);
 router.use('/pacientes', pacienteRoutes);
 router.use('/dentistas', dentistaRoutes);

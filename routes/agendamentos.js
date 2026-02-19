@@ -3,7 +3,7 @@ const router = express.Router();
 
 // Rota de teste
 router.get('/', (req, res) => {
-    res.json({ message: 'Rota de agendamentos funcionando' });
+    res.json({ message: 'Lista de agendamentos' });
 });
 
 router.post('/', (req, res) => {

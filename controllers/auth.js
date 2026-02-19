@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Usuario, Loja } = require('../models');
+const { Pessoa, Loja } = require('../models');
 
 module.exports = {
   async login(req, res) {
@@ -13,44 +13,54 @@ module.exports = {
         return res.status(400).json({ error: 'Email e senha são obrigatórios' });
       }
 
-      const usuario = await Usuario.findOne({ 
+      const pessoa = await Pessoa.findOne({ 
         where: { email },
         include: [{ model: Loja, as: 'loja' }]
       });
 
-      if (!usuario) {
-        return res.status(400).json({ error: 'Usuário não encontrado' });
+      if (!pessoa) {
+        return res.status(401).json({ error: 'Usuário não encontrado' });
       }
 
-      if (!usuario.ativo) {
-        return res.status(400).json({ error: 'Usuário inativo' });
+      if (!pessoa.ativo) {
+        return res.status(401).json({ error: 'Usuário inativo' });
       }
 
-      const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
-      if (!senhaValida) {
-        return res.status(400).json({ error: 'Senha inválida' });
+      // Verificar senha
+      // Por enquanto, aceita 123456 para teste
+      // Depois implementar bcrypt
+      if (senha !== '123456') {
+        // Se tiver senha no banco, verificar
+        if (pessoa.senha && senha !== pessoa.senha) {
+          return res.status(401).json({ error: 'Senha inválida' });
+        }
       }
 
       const token = jwt.sign(
         { 
-          id: usuario.id, 
-          nome: usuario.nome,
-          email: usuario.email,
-          cargo: usuario.cargo,
-          loja_id: usuario.loja_id 
+          id: pessoa.id, 
+          nome: pessoa.nome,
+          email: pessoa.email,
+          tipo: pessoa.tipo,
+          cargo: pessoa.cargo,
+          loja_id: pessoa.loja_id 
         },
-        process.env.JWT_SECRET || 'segredo_temporario_para_desenvolvimento',
+        process.env.JWT_SECRET || 'segredo_temporario',
         { expiresIn: '7d' }
       );
 
+      console.log('✅ Login bem-sucedido:', pessoa.nome);
+
       return res.json({
         usuario: {
-          id: usuario.id,
-          nome: usuario.nome,
-          email: usuario.email,
-          cargo: usuario.cargo,
-          loja_id: usuario.loja_id,
-          loja_nome: usuario.loja?.nome
+          id: pessoa.id,
+          nome: pessoa.nome,
+          email: pessoa.email,
+          telefone: pessoa.telefone,
+          tipo: pessoa.tipo,
+          cargo: pessoa.cargo,
+          loja_id: pessoa.loja_id,
+          loja_nome: pessoa.loja?.nome
         },
         token
       });
@@ -65,113 +75,95 @@ module.exports = {
       const { 
         name, 
         email, 
-        password, 
-        confirmPassword, 
-        phone, 
+        password,
+        phone,
+        tipo,
         cargo,
-        cnpj,
+        cpf_cnpj,
+        especialidade,
+        cro,
         clinicName,
         address,
-        especialidade,
-        cro 
+        cnpj
       } = req.body;
 
-      console.log('📝 Cadastro de usuário:', { email, cargo, clinicName });
+      console.log('📝 Dados recebidos:', { 
+        name, email, phone, tipo, cargo, clinicName 
+      });
 
-      if (!name || !email || !password || !cargo) {
-        return res.status(400).json({ error: 'Campos obrigatórios faltando' });
-      }
-
-      if (password !== confirmPassword) {
-        return res.status(400).json({ error: 'Senhas não coincidem' });
-      }
-
-      if (cargo === 'dentista' && (!especialidade || !cro)) {
-        return res.status(400).json({ error: 'Dentista precisa de especialidade e CRO' });
-      }
-
-      let loja;
-      
-      if (cargo === 'gestor') {
-        if (!clinicName || !address || !phone || !cnpj) {
-          return res.status(400).json({ error: 'Dados da clínica são obrigatórios para gestor' });
-        }
-
-        const lojaExistente = await Loja.findOne({ where: { cnpj } });
-        if (lojaExistente) {
-          return res.status(400).json({ error: 'CNPJ já cadastrado' });
-        }
-
-        loja = await Loja.create({
-          nome: clinicName,
-          endereco: address,
-          telefone: phone,
-          email: email,
-          cnpj: cnpj,
-          ativa: true
+      if (!name || !email || !phone) {
+        return res.status(400).json({ 
+          error: 'Nome, email e telefone são obrigatórios' 
         });
-      } else {
-        if (!cnpj) {
-          return res.status(400).json({ error: 'CNPJ da clínica é obrigatório' });
-        }
-
-        loja = await Loja.findOne({ where: { cnpj } });
-        if (!loja) {
-          return res.status(400).json({ error: 'Clínica não encontrada com este CNPJ' });
-        }
       }
 
-      const usuarioExistente = await Usuario.findOne({ where: { email } });
+      const usuarioExistente = await Pessoa.findOne({ where: { email } });
       if (usuarioExistente) {
         return res.status(400).json({ error: 'Email já cadastrado' });
       }
 
-      const salt = await bcrypt.genSalt(10);
-      const senha_hash = await bcrypt.hash(password, salt);
+      let tipoUsuario = tipo || 'paciente';
+      let cargoUsuario = cargo || null;
+      let lojaId = 1;
 
-      const novoUsuario = await Usuario.create({
+      if (cargo === 'gestor' || tipo === 'gestor') {
+        tipoUsuario = 'gestor';
+        cargoUsuario = 'gestor';
+        
+        let loja = await Loja.findOne({ where: { cnpj } });
+        
+        if (!loja) {
+          loja = await Loja.create({
+            nome: clinicName || 'Clínica',
+            endereco: address || '',
+            telefone: phone,
+            email: email,
+            cnpj: cnpj || '00000000000000',
+            ativa: true
+          });
+          console.log('✅ Loja criada:', loja.id);
+        }
+        
+        lojaId = loja.id;
+      }
+
+      // Hash da senha (implementar depois)
+      // const senhaHash = await bcrypt.hash(password, 10);
+
+      const usuario = await Pessoa.create({
         nome: name,
-        email,
-        senha_hash,
-        cargo,
-        especialidade: cargo === 'dentista' ? especialidade : null,
-        cro: cargo === 'dentista' ? cro : null,
-        loja_id: loja.id,
+        email: email,
+        telefone: phone,
+        senha: password || '123456', // Salva a senha diretamente por enquanto
+        cpf_cnpj: cpf_cnpj || null,
+        tipo: tipoUsuario,
+        cargo: cargoUsuario,
+        especialidade: especialidade || null,
+        cro: cro || null,
+        loja_id: lojaId,
         ativo: true
       });
 
-      console.log('✅ Usuário criado:', novoUsuario.id, 'na loja:', loja.id);
+      console.log('✅ Usuário criado:', usuario.id);
+
+      const usuarioJson = usuario.toJSON();
+      delete usuarioJson.senha;
 
       return res.status(201).json({
         message: 'Usuário cadastrado com sucesso',
-        usuario: {
-          id: novoUsuario.id,
-          nome: novoUsuario.nome,
-          email: novoUsuario.email,
-          cargo: novoUsuario.cargo,
-          loja_id: loja.id,
-          loja_nome: loja.nome
-        }
+        usuario: usuarioJson
       });
     } catch (error) {
       console.error('❌ Erro no cadastro:', error);
-      return res.status(500).json({ error: 'Erro interno do servidor' });
-    }
-  },
-
-  async listarUsuariosPorLoja(req, res) {
-    try {
-      const { lojaId } = req;
-      const usuarios = await Usuario.findAll({
-        where: { loja_id: lojaId, ativo: true },
-        attributes: ['id', 'nome', 'email', 'cargo', 'especialidade', 'cro'],
-        order: [['nome', 'ASC']]
-      });
-
-      return res.json(usuarios);
-    } catch (error) {
-      console.error('❌ Erro ao listar usuários:', error);
-      return res.status(500).json({ error: 'Erro ao listar usuários' });
+      
+      if (error.name === 'SequelizeValidationError') {
+        return res.status(400).json({ 
+          error: 'Erro de validação',
+          details: error.errors.map(e => e.message)
+        });
+      }
+      
+      return res.status(500).json({ error: 'Erro ao cadastrar usuário' });
     }
   }
 };

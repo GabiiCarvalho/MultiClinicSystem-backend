@@ -30,12 +30,12 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      data_criacao: {
+      created_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      data_atualizacao: {
+      updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -43,7 +43,6 @@ module.exports = {
     });
 
     await queryInterface.addIndex('categorias', ['loja_id']);
-    await queryInterface.addIndex('categorias', ['tipo']);
   },
 
   down: async (queryInterface) => {

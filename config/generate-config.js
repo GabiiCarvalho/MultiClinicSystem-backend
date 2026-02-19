@@ -25,10 +25,10 @@ const config = {
     logging: false
   },
   production: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
+    username: process.env.DB_USER || 'gabinatan',
+    password: process.env.DB_PASSWORD || 'sistemamulticlinic142536!',
+    database: process.env.DB_NAME || 'multiclinic_db',
+    host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
     dialect: 'postgres',
     logging: false,
@@ -48,3 +48,4 @@ fs.writeFileSync(
 );
 
 console.log('✅ Arquivo config.json gerado com sucesso!');
+console.log('📊 Usuário configurado:', config.development.username);

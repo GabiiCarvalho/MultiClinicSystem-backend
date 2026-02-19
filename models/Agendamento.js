@@ -1,5 +1,24 @@
-module.exports = (sequelize, DataTypes) => {
+const { DataTypes } = require('sequelize');
+
+module.exports = (sequelize) => {
   const Agendamento = sequelize.define('Agendamento', {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    paciente_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    dentista_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    usuario_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
     data_hora: {
       type: DataTypes.DATE,
       allowNull: false
@@ -8,48 +27,52 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: false
     },
+    procedimento: {
+      type: DataTypes.STRING(100),
+      allowNull: false
+    },
+    procedimento_descricao: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    valor: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0
+    },
     status: {
       type: DataTypes.ENUM('agendado', 'confirmado', 'em_andamento', 'concluido', 'cancelado'),
       defaultValue: 'agendado'
     },
+    pagamento_status: {
+      type: DataTypes.ENUM('pendente', 'pago', 'cancelado'),
+      defaultValue: 'pendente'
+    },
+    pagamento_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
     observacoes: {
-      type: DataTypes.TEXT
+      type: DataTypes.TEXT,
+      allowNull: true
     },
-    motivo_cancelamento: {
-      type: DataTypes.TEXT
-    },
-    tipo_procedimento: {
-      type: DataTypes.STRING(100)
+    loja_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     }
   }, {
     tableName: 'agendamentos',
     timestamps: true,
-    createdAt: 'criado_em',
-    updatedAt: 'atualizado_em'
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   });
 
   Agendamento.associate = (models) => {
-    Agendamento.belongsTo(models.Loja, { 
-      foreignKey: 'loja_id',
-      as: 'loja' 
-    });
-    Agendamento.belongsTo(models.Paciente, { 
-      foreignKey: 'paciente_id',
-      as: 'paciente' 
-    });
-    Agendamento.belongsTo(models.Usuario, { 
-      foreignKey: 'dentista_id',
-      as: 'dentista',
-      constraints: false
-    });
-    Agendamento.belongsTo(models.Usuario, { 
-      foreignKey: 'usuario_id',
-      as: 'usuario' 
-    });
-    Agendamento.hasMany(models.AgendamentoItem, { 
-      foreignKey: 'agendamento_id',
-      as: 'itens' 
-    });
+    Agendamento.belongsTo(models.Loja, { foreignKey: 'loja_id', as: 'loja' });
+    Agendamento.belongsTo(models.Pessoa, { foreignKey: 'paciente_id', as: 'paciente' });
+    Agendamento.belongsTo(models.Pessoa, { foreignKey: 'dentista_id', as: 'dentista' });
+    Agendamento.belongsTo(models.Pessoa, { foreignKey: 'usuario_id', as: 'usuario' });
+    Agendamento.belongsTo(models.Pagamento, { foreignKey: 'pagamento_id', as: 'pagamento' });
   };
 
   return Agendamento;

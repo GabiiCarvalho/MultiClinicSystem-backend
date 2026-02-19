@@ -9,29 +9,11 @@ module.exports = {
         autoIncrement: true,
         allowNull: false
       },
-      data_hora: {
-        type: Sequelize.DATE,
-        allowNull: false
-      },
-      data_hora_fim: {
-        type: Sequelize.DATE,
-        allowNull: false
-      },
-      status: {
-        type: Sequelize.ENUM('agendado', 'confirmado', 'em_andamento', 'concluido', 'cancelado'),
-        defaultValue: 'agendado'
-      },
-      observacoes: {
-        type: Sequelize.TEXT
-      },
-      motivo_cancelamento: {
-        type: Sequelize.TEXT
-      },
       paciente_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'pacientes',
+          model: 'pessoas',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -41,7 +23,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'usuarios',
+          model: 'pessoas',
           key: 'id'
         },
         onUpdate: 'CASCADE',
@@ -51,11 +33,69 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          model: 'usuarios',
+          model: 'pessoas',
           key: 'id'
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
+      },
+      data_hora: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      data_hora_fim: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
+      procedimento: {
+        type: Sequelize.STRING(100),
+        allowNull: false
+      },
+      procedimento_descricao: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      procedimento_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'procedimentos',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      },
+      valor: {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0
+      },
+      status: {
+        type: Sequelize.ENUM(
+          'pendente_pagamento', 
+          'agendado', 
+          'confirmado', 
+          'em_andamento', 
+          'concluido', 
+          'cancelado'
+        ),
+        defaultValue: 'pendente_pagamento'
+      },
+      pago: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false
+      },
+      pagamento_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true
+      },
+      observacoes: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      motivo_cancelamento: {
+        type: Sequelize.TEXT,
+        allowNull: true
       },
       loja_id: {
         type: Sequelize.INTEGER,
@@ -67,12 +107,12 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      criado_em: {
+      created_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      atualizado_em: {
+      updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -84,6 +124,7 @@ module.exports = {
     await queryInterface.addIndex('agendamentos', ['dentista_id']);
     await queryInterface.addIndex('agendamentos', ['data_hora']);
     await queryInterface.addIndex('agendamentos', ['status']);
+    await queryInterface.addIndex('agendamentos', ['pago']);
   },
 
   down: async (queryInterface) => {

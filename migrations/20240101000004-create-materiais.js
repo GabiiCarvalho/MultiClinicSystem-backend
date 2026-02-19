@@ -14,30 +14,56 @@ module.exports = {
         allowNull: false
       },
       descricao: {
-        type: Sequelize.TEXT
+        type: Sequelize.TEXT,
+        allowNull: true
       },
       quantidade: {
         type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
         defaultValue: 0
       },
       unidade: {
         type: Sequelize.STRING(20),
+        allowNull: false,
         defaultValue: 'un'
       },
       quantidade_minima: {
         type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
         defaultValue: 10
       },
       preco_unitario: {
         type: Sequelize.DECIMAL(10, 2),
-        allowNull: false
+        allowNull: false,
+        defaultValue: 0
       },
       fornecedor: {
-        type: Sequelize.STRING(100)
+        type: Sequelize.STRING(100),
+        allowNull: true
       },
       categoria: {
-        type: Sequelize.ENUM('consumivel', 'instrumental', 'medicamento'),
+        type: Sequelize.ENUM('consumivel', 'instrumental', 'medicamento', 'equipamento'),
         defaultValue: 'consumivel'
+      },
+      localizacao: {
+        type: Sequelize.STRING(100),
+        allowNull: true
+      },
+      data_validade: {
+        type: Sequelize.DATEONLY,
+        allowNull: true
+      },
+      lote: {
+        type: Sequelize.STRING(50),
+        allowNull: true
+      },
+      observacoes: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      ativo: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: true
       },
       loja_id: {
         type: Sequelize.INTEGER,
@@ -49,12 +75,12 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
-      data_criacao: {
+      created_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
       },
-      data_atualizacao: {
+      updated_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal('CURRENT_TIMESTAMP')
@@ -63,7 +89,6 @@ module.exports = {
 
     await queryInterface.addIndex('materiais', ['loja_id']);
     await queryInterface.addIndex('materiais', ['categoria']);
-    await queryInterface.addIndex('materiais', ['quantidade']);
   },
 
   down: async (queryInterface) => {
