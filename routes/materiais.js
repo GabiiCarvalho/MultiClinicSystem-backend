@@ -1,28 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middlewares/auth');
+const role = require('../middlewares/role');
 
-router.get('/', (req, res) => {
-    res.json({ message: 'Rota de materiais funcionando' });
+router.use(auth);
+
+// gestor controla estoque
+router.post('/', role('gestor'), (req, res) => {
+  res.json({ message: 'Material criado' });
 });
 
-router.post('/', (req, res) => {
-    res.json({ message: 'Material criado' });
+router.put('/:id', role('gestor'), (req, res) => {
+  res.json({ message: 'Material atualizado' });
 });
 
-router.get('/estoque/baixo', (req, res) => {
-    res.json({ message: 'Materiais com estoque baixo' });
-});
-
-router.get('/:id', (req, res) => {
-    res.json({ message: `Material ${req.params.id}` });
-});
-
-router.put('/:id', (req, res) => {
-    res.json({ message: `Material ${req.params.id} atualizado` });
-});
-
-router.delete('/:id', (req, res) => {
-    res.json({ message: `Material ${req.params.id} removido` });
+router.get('/', role('gestor','financeiro'), (req, res) => {
+  res.json({ message: 'Lista de materiais' });
 });
 
 module.exports = router;

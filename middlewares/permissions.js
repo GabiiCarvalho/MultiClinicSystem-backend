@@ -75,74 +75,41 @@ const permissions = {
   }
 };
 
-// Middleware de verificação de permissão
 module.exports.checkPermission = (permission) => {
   return (req, res, next) => {
     const userCargo = req.userCargo;
-    
-    // Gestor tem todas as permissões
+
+    if (!userCargo) {
+      return res.status(403).json({ error: 'Cargo não identificado' });
+    }
+
     if (userCargo === 'gestor') {
       return next();
     }
-    
+
     const userPermissions = permissions[userCargo];
-    
-    // Verifica se o cargo existe
+
     if (!userPermissions) {
       return res.status(403).json({ error: 'Cargo inválido' });
     }
-    
-    // Verifica se tem permissão
-    if (userPermissions.can.includes('*') || userPermissions.can.includes(permission)) {
-      // Verifica se não está na lista de negados
-      if (userPermissions.cannot.includes(permission)) {
-        return res.status(403).json({ 
-          error: 'Acesso negado',
-          message: `Usuários do cargo ${userCargo} não podem ${permission}`
-        });
-      }
+
+    if (userPermissions.cannot.includes(permission)) {
+      return res.status(403).json({
+        error: 'Acesso negado',
+        message: `Usuários do cargo ${userCargo} não podem ${permission}`
+      });
+    }
+
+    if (
+      userPermissions.can.includes('*') ||
+      userPermissions.can.includes(permission)
+    ) {
       return next();
     }
-    
-    return res.status(403).json({ 
-      error: 'Acesso negado',
-      message: `Permissão ${permission} não concedida para cargo ${userCargo}`
+
+    return res.status(403).json({
+      error: 'Permissão não concedida',
+      message: `Permissão ${permission} não autorizada para ${userCargo}`
     });
   };
-};
-
-// Middleware para filtrar dados baseado no cargo
-module.exports.filterDataByRole = (data, userCargo, userLojaId, userId) => {
-  // Todos os dados são filtrados por loja_id primeiro (já feito no middleware loja)
-  
-  if (userCargo === 'gestor') {
-    return data; // Gestor vê tudo da loja
-  }
-  
-  if (userCargo === 'financeiro') {
-    // Financeiro vê tudo, mas sem acesso a ações de cadastro
-    return data;
-  }
-  
-  if (userCargo === 'atendente') {
-    // Atendente vê tudo, mas sem ações financeiras
-    return data;
-  }
-  
-  if (userCargo === 'dentista') {
-    // Dentista vê apenas seus próprios pacientes e agendamentos
-    if (Array.isArray(data)) {
-      return data.filter(item => 
-        item.dentista_id === userId || 
-        item.dentistaId === userId
-      );
-    }
-    // Se for um único item, verifica se pertence ao dentista
-    if (data && (data.dentista_id === userId || data.dentistaId === userId)) {
-      return data;
-    }
-    return null;
-  }
-  
-  return data;
 };

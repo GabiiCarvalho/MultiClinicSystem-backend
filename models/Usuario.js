@@ -1,56 +1,20 @@
 const { DataTypes } = require('sequelize');
 
-module.exports = (sequelize, Sequelize) => {
+module.exports = (sequelize) => {
   const Usuario = sequelize.define('Usuario', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    nome: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      validate: {
-        notEmpty: true
-      }
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true
-      }
-    },
-    senha_hash: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    nome: { type: DataTypes.STRING, allowNull: false },
+    email: { type: DataTypes.STRING, allowNull: false, unique: true },
+    senha_hash: { type: DataTypes.STRING, allowNull: false },
     cargo: {
       type: DataTypes.ENUM('proprietario', 'gestor', 'dentista', 'atendente', 'financeiro'),
-      allowNull: false,
       defaultValue: 'atendente'
     },
-    ativo: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
-    },
-    loja_id: {
+    ativo: { type: DataTypes.BOOLEAN, defaultValue: true },
+    clinica_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      references: {
-        model: 'lojas',
-        key: 'id'
-      }
-    },
-    especialidade: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    cro: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      unique: true
+      references: { model: 'clinicas', key: 'id' }
     }
   }, {
     tableName: 'usuarios',
@@ -59,23 +23,10 @@ module.exports = (sequelize, Sequelize) => {
     updatedAt: 'atualizado_em'
   });
 
-  Usuario.associate = function(models) {
-    Usuario.belongsTo(models.Loja, {
-      foreignKey: 'loja_id',
-      as: 'loja'
-    });
-    Usuario.hasMany(models.Agendamento, {
-      foreignKey: 'dentista_id',
-      as: 'agendamentos'
-    });
-    Usuario.hasMany(models.Agendamento, {
-      foreignKey: 'usuario_id',
-      as: 'agendamentos_criados'
-    });
-    Usuario.hasMany(models.Venda, {
-      foreignKey: 'usuario_id',
-      as: 'vendas'
-    });
+  Usuario.associate = (models) => {
+    Usuario.belongsTo(models.Clinica, { foreignKey: 'clinica_id' });
+    Usuario.hasMany(models.Agendamento, { foreignKey: 'usuario_id' });
+    Usuario.hasMany(models.Venda, { foreignKey: 'usuario_id' });
   };
 
   return Usuario;

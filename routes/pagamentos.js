@@ -1,14 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const pagamentoController = require('../controllers/pagamentoController');
-const authMiddleware = require('../middlewares/auth');
+const auth = require('../middlewares/auth');
 
-router.use(authMiddleware);
+router.use(auth);
 
-router.post('/', pagamentoController.criarPagamento);
-router.get('/', pagamentoController.listarPagamentos);
-router.get('/:pagamentoId', pagamentoController.obterPagamento);
-router.get('/:pagamentoId/comprovante', pagamentoController.gerarComprovante);
-router.post('/:pagamentoId/whatsapp', pagamentoController.enviarWhatsApp);
+router.post('/', (req, res) => {
+  res.json({ message: 'Pagamento criado' });
+});
+
+router.get('/', (req, res) => {
+  res.json({ message: 'Lista de pagamentos' });
+});
+
+router.get('/:id', (req, res) => {
+  res.json({ message: 'Pagamento específico' });
+});
 
 module.exports = router;

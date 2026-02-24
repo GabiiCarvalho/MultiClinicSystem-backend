@@ -1,21 +1,23 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middlewares/auth');
 
-// Rota de teste
+router.use(auth);
+
 router.get('/', (req, res) => {
-    res.json({ message: 'Lista de agendamentos' });
+  res.json({ clinica: req.clinica_id });
 });
 
 router.post('/', (req, res) => {
-    res.json({ message: 'Agendamento criado' });
+  res.json({ message: 'Agendamento criado' });
 });
 
-router.get('/:id', (req, res) => {
-    res.json({ message: `Agendamento ${req.params.id}` });
+router.patch('/:id/status', (req, res) => {
+  res.json({ message: 'Status atualizado' });
 });
 
-router.put('/:id/status', (req, res) => {
-    res.json({ message: `Status do agendamento ${req.params.id} atualizado` });
+router.delete('/:id', (req, res) => {
+  res.json({ message: 'Agendamento removido' });
 });
 
 module.exports = router;

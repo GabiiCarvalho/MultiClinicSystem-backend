@@ -9,9 +9,7 @@ console.log('🔄 Iniciando servidor...');
 db.sequelize.authenticate()
   .then(() => {
     console.log('✅ Conexão com o banco estabelecida');
-    return db.sequelize.sync({ alter: true });
-  })
-  .then(() => {
+
     app.listen(PORT, () => {
       console.log('🚀 Servidor iniciado!');
       console.log(`📍 Porta: ${PORT}`);

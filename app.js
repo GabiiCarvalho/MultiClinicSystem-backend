@@ -1,6 +1,11 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const tenantMiddleware = require('./middlewares/tenantMiddleware');
+const subdomainMiddleware = require('./middlewares/subdomainMiddleware');
+
+app.use(subdomainMiddleware);
+app.use(tenantMiddleware);
 
 const app = express();
 
@@ -19,6 +24,9 @@ app.use((req, res, next) => {
     console.log('🌐', new Date().toLocaleString(), req.method, req.originalUrl);
     next();
 });
+
+app.use(subdomainMiddleware);
+app.use(tenantMiddleware);
 
 try {
     const routes = require('./routes');

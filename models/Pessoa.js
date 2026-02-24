@@ -1,92 +1,28 @@
-const { DataTypes } = require('sequelize');
-
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {
   const Pessoa = sequelize.define('Pessoa', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
     nome: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING(150),
       allowNull: false
-    },
-    email: {
-      type: DataTypes.STRING(100),
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true
-      }
-    },
-    senha: {
-      type: DataTypes.STRING(255),
-      allowNull: true
-    },
-    telefone: {
-      type: DataTypes.STRING(20),
-      allowNull: false
-    },
-    whatsapp: {
-      type: DataTypes.STRING(20),
-      allowNull: true
     },
     cpf: {
-      type: DataTypes.STRING(14),
-      allowNull: true,
-      unique: true
+      type: DataTypes.STRING(20)
     },
-    endereco: {
-      type: DataTypes.TEXT,
-      allowNull: true
+    telefone: {
+      type: DataTypes.STRING(20)
+    },
+    email: {
+      type: DataTypes.STRING(150)
+    },
+    data_nascimento: {
+      type: DataTypes.DATEONLY
     },
     tipo: {
-      type: DataTypes.ENUM('paciente', 'dentista', 'financeiro', 'gestor', 'atendente', 'proprietario'),
-      allowNull: false,
-      defaultValue: 'paciente'
+      type: DataTypes.ENUM('paciente', 'atendente', 'gestor'),
+      allowNull: false
     },
-    cargo: {
-      type: DataTypes.ENUM('gestor', 'dentista', 'atendente', 'financeiro', 'proprietario'),
-      allowNull: true
-    },
-    especialidade: {
-      type: DataTypes.STRING(100),
-      allowNull: true
-    },
-    cro: {
-      type: DataTypes.STRING(20),
-      allowNull: true,
-      unique: true
-    },
-    biografia: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    observacoes: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    ativo: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
-    },
-    loja_id: {
+    clinica_id: {
       type: DataTypes.INTEGER,
-      allowNull: false,
-      references: {
-        model: 'lojas',
-        key: 'id'
-      }
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW
+      allowNull: false
     }
   }, {
     tableName: 'pessoas',
@@ -96,10 +32,7 @@ module.exports = (sequelize) => {
   });
 
   Pessoa.associate = (models) => {
-    Pessoa.belongsTo(models.Loja, { 
-      foreignKey: 'loja_id', 
-      as: 'loja' 
-    });
+    Pessoa.belongsTo(models.Clinica, { foreignKey: 'clinica_id', as: 'clinica' });
   };
 
   return Pessoa;

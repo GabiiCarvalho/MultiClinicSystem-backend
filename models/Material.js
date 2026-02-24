@@ -2,70 +2,14 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const Material = sequelize.define('Material', {
-    id: {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    nome: { type: DataTypes.STRING(100), allowNull: false },
+    quantidade: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
+    preco_unitario: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
+    clinica_id: {
       type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    nome: {
-      type: DataTypes.STRING(100),
-      allowNull: false
-    },
-    descricao: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    quantidade: {
-      type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
-      defaultValue: 0
-    },
-    unidade: {
-      type: DataTypes.STRING(20),
-      allowNull: false,
-      defaultValue: 'un'
-    },
-    quantidade_minima: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      defaultValue: 10
-    },
-    preco_unitario: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false,
-      defaultValue: 0
-    },
-    fornecedor: {
-      type: DataTypes.STRING(100),
-      allowNull: true
-    },
-    categoria: {
-      type: DataTypes.ENUM('consumivel', 'instrumental', 'medicamento', 'equipamento'),
-      defaultValue: 'consumivel'
-    },
-    localizacao: {
-      type: DataTypes.STRING(100),
-      allowNull: true
-    },
-    data_validade: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    lote: {
-      type: DataTypes.STRING(50),
-      allowNull: true
-    },
-    observacoes: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    ativo: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
-    },
-    loja_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false
+      references: { model: 'clinicas', key: 'id' }
     }
   }, {
     tableName: 'materiais',
@@ -75,8 +19,7 @@ module.exports = (sequelize) => {
   });
 
   Material.associate = (models) => {
-    Material.belongsTo(models.Loja, { foreignKey: 'loja_id', as: 'loja' });
-    Material.hasMany(models.MaterialMovimentacao, { foreignKey: 'material_id', as: 'movimentacoes' });
+    Material.belongsTo(models.Clinica, { foreignKey: 'clinica_id' });
   };
 
   return Material;

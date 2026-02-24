@@ -1,28 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middlewares/auth');
+const role = require('../middlewares/role');
 
-router.get('/', (req, res) => {
-    res.json({ message: 'Rota de pacientes funcionando' });
+router.use(auth);
+
+// gestor e atendente podem gerenciar pacientes
+router.get('/', role('gestor', 'atendente'), (req, res) => {
+  res.json({ message: 'Lista de pacientes' });
 });
 
-router.post('/', (req, res) => {
-    res.json({ message: 'Paciente criado' });
+router.post('/', role('gestor', 'atendente'), (req, res) => {
+  res.json({ message: 'Paciente criado' });
 });
 
-router.get('/buscar/:termo', (req, res) => {
-    res.json({ message: `Buscando: ${req.params.termo}` });
-});
-
-router.get('/:id', (req, res) => {
-    res.json({ message: `Paciente ${req.params.id}` });
-});
-
-router.put('/:id', (req, res) => {
-    res.json({ message: `Paciente ${req.params.id} atualizado` });
-});
-
-router.get('/:id/agendamentos', (req, res) => {
-    res.json({ message: `Agendamentos do paciente ${req.params.id}` });
+router.put('/:id', role('gestor', 'atendente'), (req, res) => {
+  res.json({ message: 'Paciente atualizado' });
 });
 
 module.exports = router;

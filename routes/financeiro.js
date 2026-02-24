@@ -1,18 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const financeiroController = require('../controllers/financeiro');
-const { 
-  authMiddleware, 
-  isFinanceiro,
-  filterByRole 
-} = require('../middlewares/auth');
+const auth = require('../middlewares/auth');
+const role = require('../middlewares/role');
 
-router.use(authMiddleware);
-router.use(filterByRole);
+router.use(auth);
 
-// Rotas de caixa (apenas financeiro e gestor)
-router.get('/caixa', isFinanceiro, financeiroController.getCaixa);
-router.post('/vendas', isFinanceiro, financeiroController.registrarVenda);
-router.get('/relatorios', isFinanceiro, financeiroController.relatorios);
+// gestor e financeiro podem acessar
+router.get('/caixa', role('gestor','financeiro'), (req, res) => {
+  res.json({ message: 'Resumo de caixa' });
+});
+
+router.get('/relatorios', role('gestor','financeiro'), (req, res) => {
+  res.json({ message: 'Relatórios financeiros' });
+});
+
+router.post('/pagamento', role('gestor','financeiro'), (req, res) => {
+  res.json({ message: 'Pagamento registrado' });
+});
 
 module.exports = router;

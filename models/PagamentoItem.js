@@ -1,29 +1,18 @@
-const { DataTypes } = require('sequelize');
-
-module.exports = (sequelize) => {
+module.exports = (sequelize, DataTypes) => {
   const PagamentoItem = sequelize.define('PagamentoItem', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    pagamento_id: {
-      type: DataTypes.INTEGER,
+    descricao: {
+      type: DataTypes.STRING(150),
       allowNull: false
     },
-    agendamento_id: {
+    quantidade: {
       type: DataTypes.INTEGER,
+      defaultValue: 1
+    },
+    preco_unitario: {
+      type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     },
-    procedimento_nome: {
-      type: DataTypes.STRING(100),
-      allowNull: false
-    },
-    procedimento_descricao: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    valor: {
+    total: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false
     }
@@ -31,12 +20,11 @@ module.exports = (sequelize) => {
     tableName: 'pagamento_itens',
     timestamps: true,
     createdAt: 'created_at',
-    updatedAt: false
+    updatedAt: 'updated_at'
   });
 
   PagamentoItem.associate = (models) => {
-    PagamentoItem.belongsTo(models.Pagamento, { foreignKey: 'pagamento_id', as: 'pagamento' });
-    PagamentoItem.belongsTo(models.Agendamento, { foreignKey: 'agendamento_id', as: 'agendamento' });
+    PagamentoItem.belongsTo(models.Pagamento, { foreignKey: 'pagamento_id' });
   };
 
   return PagamentoItem;

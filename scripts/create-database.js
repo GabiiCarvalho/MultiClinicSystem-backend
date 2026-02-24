@@ -3,35 +3,32 @@ require('dotenv').config();
 
 async function createDatabase() {
   const client = new Client({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    user: process.env.DB_USER || 'gabinatan',
-    password: process.env.DB_PASSWORD || 'sistemamulticlinic142536!',
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
     database: 'postgres'
   });
 
   try {
     await client.connect();
-    console.log('✅ Conectado ao PostgreSQL');
 
-    // Verifica se o banco já existe
+    const dbName = process.env.DB_NAME;
+
     const res = await client.query(
       "SELECT 1 FROM pg_database WHERE datname = $1",
-      [process.env.DB_NAME || 'multiclinic_db']
+      [dbName]
     );
 
     if (res.rows.length === 0) {
-      // Cria o banco de dados
-      await client.query(
-        `CREATE DATABASE ${process.env.DB_NAME || 'multiclinic_db'}`
-      );
-      console.log(`✅ Banco de dados "${process.env.DB_NAME || 'multiclinic_db'}" criado!`);
+      await client.query(`CREATE DATABASE ${dbName}`);
+      console.log(`✅ Banco ${dbName} criado`);
     } else {
-      console.log(`ℹ️ Banco de dados "${process.env.DB_NAME || 'multiclinic_db'}" já existe`);
+      console.log(`ℹ️ Banco ${dbName} já existe`);
     }
 
   } catch (error) {
-    console.error('❌ Erro:', error.message);
+    console.error(error);
   } finally {
     await client.end();
   }

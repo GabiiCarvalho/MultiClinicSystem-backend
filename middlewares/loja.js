@@ -1,37 +1,28 @@
 const { Loja } = require('../models');
 
 module.exports = async (req, res, next) => {
-  // Se o usuário já tem loja_id (de token JWT), usa esse
-  if (req.lojaId) {
-    try {
-      const loja = await Loja.findByPk(req.lojaId);
-      if (!loja || !loja.ativa) {
-        return res.status(403).json({ error: 'Loja não encontrada ou inativa' });
-      }
-      req.loja = loja;
-      req.lojaCNPJ = loja.cnpj;
-      return next();
-    } catch (err) {
-      return res.status(500).json({ error: 'Erro ao verificar loja' });
-    }
-  }
-  
-  // Para rotas que precisam especificar a loja (como cadastro inicial)
-  const lojaId = req.params.lojaId || req.body.loja_id;
-  if (!lojaId) {
-    return res.status(400).json({ error: 'ID da loja não fornecido' });
-  }
-
   try {
-    const loja = await Loja.findByPk(lojaId);
-    if (!loja || !loja.ativa) {
+    if (!req.lojaId) {
+      return res.status(403).json({ error: 'Loja não identificada no token' });
+    }
+
+    const loja = await Loja.findOne({
+      where: {
+        id: req.lojaId,
+        ativa: true
+      }
+    });
+
+    if (!loja) {
       return res.status(403).json({ error: 'Loja não encontrada ou inativa' });
     }
-    req.lojaId = loja.id;
+
     req.loja = loja;
     req.lojaCNPJ = loja.cnpj;
-    next();
+
+    return next();
+
   } catch (err) {
-    return res.status(500).json({ error: 'Erro ao verificar loja' });
+    return res.status(500).json({ error: 'Erro ao validar loja' });
   }
 };

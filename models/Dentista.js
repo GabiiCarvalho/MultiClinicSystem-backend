@@ -1,13 +1,12 @@
 module.exports = (sequelize, DataTypes) => {
   const Dentista = sequelize.define('Dentista', {
     nome: {
-      type: DataTypes.STRING(100),
+      type: DataTypes.STRING(150),
       allowNull: false
     },
     cro: {
-      type: DataTypes.STRING(20),
-      allowNull: false,
-      unique: true
+      type: DataTypes.STRING(50),
+      allowNull: false
     },
     especialidade: {
       type: DataTypes.STRING(100)
@@ -16,35 +15,22 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(20)
     },
     email: {
-      type: DataTypes.STRING(100),
-      validate: {
-        isEmail: true
-      }
+      type: DataTypes.STRING(150)
     },
-    horario_inicio: {
-      type: DataTypes.TIME
-    },
-    horario_fim: {
-      type: DataTypes.TIME
-    },
-    dias_atendimento: {
-      type: DataTypes.JSON, // Ex: ["segunda", "terca", "quarta", "quinta", "sexta"]
-      defaultValue: []
-    },
-    ativo: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
+    clinica_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
     }
   }, {
     tableName: 'dentistas',
     timestamps: true,
-    createdAt: 'data_criacao',
-    updatedAt: 'data_atualizacao'
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   });
 
   Dentista.associate = (models) => {
-    Dentista.belongsTo(models.Loja, { foreignKey: 'loja_id', as: 'loja' });
-    Dentista.hasMany(models.Agendamento, { foreignKey: 'dentista_id', as: 'agendamentos' });
+    Dentista.belongsTo(models.Clinica, { foreignKey: 'clinica_id' });
+    Dentista.hasMany(models.Agendamento, { foreignKey: 'dentista_id' });
   };
 
   return Dentista;

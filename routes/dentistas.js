@@ -1,24 +1,24 @@
 const express = require('express');
 const router = express.Router();
+const auth = require('../middlewares/auth');
+const role = require('../middlewares/role');
 
-router.get('/', (req, res) => {
-    res.json({ message: 'Rota de dentistas funcionando' });
+router.use(auth);
+
+router.post('/', role('gestor'), (req, res) => {
+  res.json({ message: 'Dentista cadastrado' });
 });
 
-router.post('/', (req, res) => {
-    res.json({ message: 'Dentista criado' });
+router.post('/financeiro', role('gestor'), (req, res) => {
+  res.json({ message: 'Usuário financeiro cadastrado' });
 });
 
-router.get('/:id', (req, res) => {
-    res.json({ message: `Dentista ${req.params.id}` });
+router.post('/atendente', role('gestor'), (req, res) => {
+  res.json({ message: 'Atendente cadastrado' });
 });
 
-router.put('/:id', (req, res) => {
-    res.json({ message: `Dentista ${req.params.id} atualizado` });
-});
-
-router.get('/:id/agendamentos', (req, res) => {
-    res.json({ message: `Agendamentos do dentista ${req.params.id}` });
+router.get('/', role('gestor'), (req, res) => {
+  res.json({ message: 'Lista da equipe' });
 });
 
 module.exports = router;

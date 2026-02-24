@@ -1,20 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/auth');
+const AuthController = require('../controllers/AuthController');
 
-console.log('🔐 Auth routes carregadas');
-console.log('  - login disponível:', !!authController.login);
-console.log('  - cadastrarUsuario disponível:', !!authController.cadastrarUsuario);
-
-// Rota de login
-router.post('/login', authController.login);
-
-// Rota de cadastro de usuário
-router.post('/cadastrar-usuario', authController.cadastrarUsuario);
-
-// Rota para listar usuários da loja (protegida)
-router.get('/usuarios', authController.listarUsuariosPorLoja || ((req, res) => {
-    res.json({ message: 'Lista de usuários' });
-}));
+router.post('/login', AuthController.login);
+router.post('/register', AuthController.register);
 
 module.exports = router;

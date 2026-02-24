@@ -2,50 +2,19 @@ const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
   const MaterialMovimentacao = sequelize.define('MaterialMovimentacao', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    material_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false
-    },
     tipo: {
       type: DataTypes.ENUM('entrada', 'saida', 'ajuste'),
       allowNull: false
     },
-    quantidade: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
-    },
-    quantidade_anterior: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
-    },
-    quantidade_nova: {
-      type: DataTypes.DECIMAL(10, 2),
-      allowNull: false
-    },
-    motivo: {
-      type: DataTypes.STRING(255),
-      allowNull: true
-    },
-    usuario_id: {
+    quantidade: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+    quantidade_anterior: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+    quantidade_nova: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+    motivo: DataTypes.STRING(255),
+    usuario_id: { type: DataTypes.INTEGER, allowNull: false },
+    clinica_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
-    },
-    agendamento_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    observacoes: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    loja_id: {
-      type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      references: { model: 'clinicas', key: 'id' }
     }
   }, {
     tableName: 'material_movimentacoes',
@@ -55,10 +24,9 @@ module.exports = (sequelize) => {
   });
 
   MaterialMovimentacao.associate = (models) => {
-    MaterialMovimentacao.belongsTo(models.Loja, { foreignKey: 'loja_id', as: 'loja' });
-    MaterialMovimentacao.belongsTo(models.Material, { foreignKey: 'material_id', as: 'material' });
-    MaterialMovimentacao.belongsTo(models.Pessoa, { foreignKey: 'usuario_id', as: 'usuario' });
-    MaterialMovimentacao.belongsTo(models.Agendamento, { foreignKey: 'agendamento_id', as: 'agendamento' });
+    MaterialMovimentacao.belongsTo(models.Material, { foreignKey: 'material_id' });
+    MaterialMovimentacao.belongsTo(models.Usuario, { foreignKey: 'usuario_id' });
+    MaterialMovimentacao.belongsTo(models.Clinica, { foreignKey: 'clinica_id' });
   };
 
   return MaterialMovimentacao;
