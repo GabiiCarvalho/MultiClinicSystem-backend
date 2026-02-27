@@ -1,13 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const tenantMiddleware = require('./middlewares/tenantMiddleware');
 const subdomainMiddleware = require('./middlewares/subdomainMiddleware');
+const tenantMiddleware = require('./middlewares/tenantMiddleware');
+
+const app = express();
 
 app.use(subdomainMiddleware);
 app.use(tenantMiddleware);
-
-const app = express();
 
 app.use(cors({
     origin: ['http://localhost:5173', 'http://localhost:3000'],
