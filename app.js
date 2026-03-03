@@ -1,8 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const subdomainMiddleware = require('./middlewares/subdomainMiddleware');
-const tenantMiddleware = require('./middlewares/tenantMiddleware');
+const subdomainMiddleware = require('./middleware/subdomainMiddleware');
+const tenantMiddleware = require('./middleware/tenantMiddleware');
 
 const app = express();
 
