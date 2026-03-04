@@ -1,76 +1,68 @@
 /**
- * RBAC - Role-Based Access Control
- * 
- * Permissões por cargo:
- * proprietário/gestor -> TUDO
- * atendente -> agendamentos, pacientes, agenda, orçamentos
- * financeiro -> caixa, agendamentos (ver), agenda (ver)
- * dentista -> SOMENTE seus próprios agendamentos
- * esteticistas -> SOMENTE seus próprios agendamentos
+ * RBAC — Role-Based Access Control
+ *
+ * proprietario/gestor → tudo
+ * atendente           → agendamentos + pacientes + agenda (sem caixa)
+ * financeiro          → caixa + leitura de agendamentos/pacientes
+ * dentista            → SOMENTE os seus agendamentos e pacientes
+ * esteticista         → SOMENTE os seus agendamentos e pacientes
  */
 
 const PERMISSIONS = {
-    proprietario: ['*'],
-    gestor: ['*'],
-    atendente: [
-        'agendamentos:read', 'agendamentos:create', 'agendamentos:update', 'agendamentos:cancel',
-        'pacientes:read', 'pacientes:create', 'pacientes:update', 'pacientes:delete',
-        'agenda:read', 'agenda:create', 'agenda:update', 'agenda:delete',
-        'orcamentos:read', 'orcamentos:create',
-    ],
-    financeiro: [
-        'agendamentos:read', 'agenda:read',
-        'caixa:read', 'caixa:write',
-        'pacientes:read',
-        'relatorios:read',
-    ],
-    dentista: [
-        'agendamentos:read:own', // SOMENTE os seus próprios agendamentos
-        'agendamentos:update:own',
-        'pacientes:read:own',
-        'agenda:read:own',
-    ],
-    esteticista: [
-        'agendamentos:read:own', // SOMENTE os seus próprios agendamentos
-        'agendamentos:update:own',
-        'pacientes:read:own',
-        'agenda:read:own',
-    ],
+  proprietario: ['*'],
+  gestor:       ['*'],
+  atendente: [
+    'agendamentos:read', 'agendamentos:create',
+    'agendamentos:update', 'agendamentos:cancel',
+    'pacientes:read', 'pacientes:create', 'pacientes:update',
+    'agenda:read', 'agenda:update',
+    'usuarios:read',
+  ],
+  financeiro: [
+    'agendamentos:read',
+    'pacientes:read',
+    'agenda:read',
+    'caixa:read', 'caixa:write',
+    'usuarios:read',
+  ],
+  dentista: [
+    'agendamentos:read:own',
+    'agendamentos:update:own',
+    'pacientes:read:own',
+    'agenda:read:own',
+  ],
+  esteticista: [
+    'agendamentos:read:own',
+    'agendamentos:update:own',
+    'pacientes:read:own',
+    'agenda:read:own',
+  ],
 };
 
 /**
- * Verifica se o cargo tem permissão para a ação
- * @param {string[]} requiredPermissions 
+ * Verifica se o cargo tem pelo menos UMA das permissões listadas.
+ * Aceita tanto permissão exata quanto versão :own
+ * Ex: checkPermission(['agendamentos:read', 'agendamentos:read:own'])
  */
-
 const checkPermission = (requiredPermissions) => {
-    return (req, res, next) => {
-        const { cargo } = req.user;
-        const userPerms = PERMISSIONS[cargo] || [];
+  return (req, res, next) => {
+    const { cargo } = req.user;
+    const userPerms = PERMISSIONS[cargo] || [];
 
-        // Gestor/Proprietário passam direto
-        if (userPerms.includes('*')) return next();
+    // Gestor/proprietário passam direto
+    if (userPerms.includes('*')) return next();
 
-        const hasAll = requiredPermissions.every(p => userPerms.includes(p));
-        if (!hasAll) {
-            return res.status(403).json({ error: 'Acesso negado', detail: `Cargo "${cargo}" não tem permissão para esta operação.` });
-        }
-        next();
-    };
-};
+    // Verifica se tem ao menos uma das permissões requeridas
+    const hasAny = requiredPermissions.some(p => userPerms.includes(p));
 
-/**
- *  Verifica se dentista/esteticista só vê seus próprios dados
- *  Injeta req.filterByProfissional = true quando necessário
- */
-
-const isolateProfissional = (req, res, next) => {
-    const { cargo, id } = req.user;
-    if ([ 'dentista', 'esteticista' ].includes(cargo)) {
-        req.filterByProfissional = true;
-        req.profissionalId = id;
+    if (!hasAny) {
+      return res.status(403).json({
+        error: 'Acesso negado',
+        detail: `Cargo "${cargo}" não tem permissão para esta operação`,
+      });
     }
     next();
+  };
 };
 
-module.exports = { checkPermission, isolateProfissional, PERMISSIONS };
+module.exports = { checkPermission, PERMISSIONS };

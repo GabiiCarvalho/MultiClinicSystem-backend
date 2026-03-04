@@ -193,14 +193,48 @@ const atualizarStatus = async (req, res) => {
     }
 
     try {
-        // Busca e verifica acesso
-        const { rows } = await database.query(
+        const { rows: check } = await database.query(
             'SELECT profissional_id FROM agendamentos WHERE id = $1 AND clinica_id = $2',
             [id, clinica_id]
         );
         if (!check.length) return res.status(404).json({ error: 'Não encontrado' });
 
-        // ISOLAMENTO: dentista/esteticista só pode atualizar seus próprios agendamentos
+        // ISOLAMENTO: dentista/esteticista só pode atualizar o seus próprios agendamentos
+        if (['dentista', 'esteticista'].includes(cargo)) {
+            if (check[0].profissional_id !== userId) {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+        }
+        const { rows } = await database.query(
+            `UPDATE agendamentos SET status = $1, motivo_cancelamento = $2,
+            updated_at = NOW() WHERE id = $3 AND clinica_id = $4 RETURNING *`,
+            [status, motivo_cancelamento, id, clinica_id]
+        );
+
+        res.json(rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar status' });
+    }
+};
+
+/**
+ * PATCH /agendamentos/:id/data
+ * Drag & Drop no calendário - verificar conflito no novo horário
+ */
+
+const atualizarData = async (req, res) => {
+    const { clinica_id, cargo, id: userId } = req.user;
+    const { id } = req.params;
+    const { data_hora, data_hora_fim } = req.body;
+
+    try {
+        const { rows: check } = await database.query(
+            'SELECT profissional_id, data_hora_fim, data_hora FROM agendamentos WHERE id = $1 AND clinica_id = $2',
+            [id, clinica_id]
+        );
+        if (!check.length) return res.status(404).json({ error: 'Não encontrado' });
+
+        // ISOLAMENTO
         if (['dentista', 'esteticista'].includes(cargo)) {
             if (check[0].profissional_id !== userId) {
                 return res.status(403).json({ error: 'Acesso negado' });
@@ -208,22 +242,61 @@ const atualizarStatus = async (req, res) => {
         }
 
         const profId = check[0].profissional_id;
-        const duracao = new Date(check[0].data_hora_fim).getTime() - new Date(check[0].data_hora);
+        const duracao = new Date(check[0].data_hora_fim) - new Date(check[0].data_hora);
         const novoFim = data_hora_fim || new Date(new Date(data_hora).getTime() + duracao).toISOString();
 
-        // VERIFICAÇÃO DE CONFLITO no novo horário 
+        // VERIFICAÇÃO de conflito no novo horário
         const { rows: conflito } = await database.query(
-            `SELECT id FROM agendamentos
-            WHERE profissional_id = $1
-            AND id != $2
-            AND status NOT IN ('cancelado', 'finalizado')
-            AND data_hora < $4
-            AND data_hora_fim > $3`,
+            `SELECT id FROM agendamentos WHERE profissional_id = $1 AND id != $2 AND status NOT IN ('cancelado', 'finalizado') AND data_hora < $4 AND data_hora_fim > $3`,
             [profId, id, data_hora, novoFim]
         );
 
         if (conflito.length) {
             return res.status(409).json({ error: 'Conflito de horário', detail: 'Profissional já possui atendimento neste horário' });
         }
+
+        const { rows } = await database.query(
+            `UPDATE agendamentos SET data_hora = $1, data_hora_fim = $2, updated_at = NOW() WHERE id = $3 AND clinica_id = $4 RETURNING *`,
+            [data_hora, novoFim, id, clinica_id]
+        );
+        res.json(rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao reagendar' });
     }
-}
+};
+
+/**
+ * PATCH /agendamentos/:id/progresso
+ */
+const atualizarProgresso = async (req, res) => {
+    const { clinica_id, cargo, id: userId } = req.user;
+    const { id } = req.params;
+    const { progress } = req.body;
+
+    try {
+        const { rows: check } = await database.query(
+            'SELECT profissional_id FROM agendamentos WHERE id = $1 AND  clinica_id = $2',
+            [id, clinica_id]
+        );
+        if (!check.length) return res.status(404).json({ error: 'Não encontrado' });
+
+        if (['dentista', 'esteticista'].includes(cargo)) {
+            if (check[0].profissional_id !== userId) {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+        }
+
+        const { rows } = await database.query(
+            `UPDATE agendamentos SET procedure_progress =$1, updated_at = NOW()
+            WHERE id = $2 AND clinica_id = $3 RETURNING *`,
+            [progress, id, clinica_id]
+        );
+        res.json(rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar progresso' });
+    }
+};
+
+module.exports = {
+    listarAgendamentos, getAgendamento, criarAgendamento, atualizarStatus, atualizarData, atualizarProgresso 
+};

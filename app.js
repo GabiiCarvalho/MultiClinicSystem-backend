@@ -1,62 +1,46 @@
 require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const subdomainMiddleware = require('./middleware/subdomainMiddleware');
-const tenantMiddleware = require('./middleware/tenantMiddleware');
+const express    = require('express');
+const cors       = require('cors');
+const helmet     = require('helmet');
+const rateLimit  = require('express-rate-limit');
+
+const authRoutes         = require('./modules/auth/auth.routes');
+const usuariosRoutes     = require('./modules/usuarios/usuarios.routes');
+const agendamentosRoutes = require('./modules/agendamentos/agendamentos.routes');
+const pacientesRoutes    = require('./modules/pacientes/pacientes.routes');
+const clinicasRoutes     = require('./modules/clinicas/clinicas.routes');
 
 const app = express();
 
-app.use(subdomainMiddleware);
-app.use(tenantMiddleware);
-
+// Segurança
+app.use(helmet());
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
 }));
 
-app.options('*', cors());
+// Rate limiting — 200 req/15min por IP
+app.use(rateLimit({ windowMs: 15 * 60_000, max: 200 }));
+
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-    console.log('🌐', new Date().toLocaleString(), req.method, req.originalUrl);
-    next();
-});
+// Rotas
+app.use('/auth',         authRoutes);
+app.use('/usuarios',     usuariosRoutes);
+app.use('/agendamentos', agendamentosRoutes);
+app.use('/pacientes',    pacientesRoutes);
+app.use('/clinicas',     clinicasRoutes);
 
-app.use(subdomainMiddleware);
-app.use(tenantMiddleware);
+// Health check
+app.get('/health', (_, res) => res.json({ ok: true, ts: new Date() }));
 
-try {
-    const routes = require('./routes');
-    app.use('/api', routes);
-    console.log('✅ Rotas carregadas com sucesso');
-} catch (error) {
-    console.error('❌ Erro ao carregar rotas:', error.message);
-}
-
-app.get('/', (req, res) => {
-    res.json({ 
-        message: 'Bem-vindo à API da MultiClinic',
-        version: '1.0.0',
-        endpoints: {
-            health: '/api/health',
-            auth: {
-                login: 'POST /api/auth/login',
-                cadastro: 'POST /api/auth/cadastrar-usuario'
-            }
-        }
-    });
-});
-
+// Handler de erros global
 app.use((err, req, res, next) => {
-    console.error('💥 Erro:', err);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+  console.error(err.stack);
+  res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
-app.use('*', (req, res) => {
-    res.status(404).json({ error: 'Rota não encontrada' });
-});
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
 
 module.exports = app;
